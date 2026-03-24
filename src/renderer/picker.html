@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;" />
+  <title>Choose what to share</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, sans-serif;
+      background: #1e1e2e;
+      color: #cdd6f4;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    h1 { font-size: 15px; margin-bottom: 14px; }
+    #sources {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .source {
+      border: 2px solid #45475a;
+      border-radius: 8px;
+      cursor: pointer;
+      padding: 8px;
+      background: #313244;
+      transition: border-color 0.1s;
+    }
+    .source:hover { border-color: #89b4fa; }
+    .source.selected { border-color: #89b4fa; background: #3b3d5a; }
+    .source img {
+      width: 100%;
+      border-radius: 4px;
+      display: block;
+      margin-bottom: 6px;
+      background: #181825;
+    }
+    .source .name {
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      padding-top: 14px;
+    }
+    button {
+      padding: 8px 20px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    #btn-share { background: #89b4fa; color: #1e1e2e; }
+    #btn-share:disabled { opacity: 0.4; cursor: default; }
+    #btn-cancel { background: #45475a; color: #cdd6f4; }
+    #loading { color: #6c7086; padding: 20px 0; }
+  </style>
+</head>
+<body>
+  <h1>Choose what to share</h1>
+  <div id="sources"><p id="loading">Loading sources…</p></div>
+  <div id="actions">
+    <button id="btn-cancel">Cancel</button>
+    <button id="btn-share" disabled>Share</button>
+  </div>
+  <script src="picker-bundle.js"></script>
+</body>
+</html>

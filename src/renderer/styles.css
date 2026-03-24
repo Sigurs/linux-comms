@@ -1,0 +1,357 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --sidebar-width: 72px;
+  --sidebar-bg: #1e1e2e;
+  --sidebar-active: #313244;
+  --sidebar-hover: #2a2a3e;
+  --accent: #89b4fa;
+  --text-primary: #cdd6f4;
+  --text-muted: #6c7086;
+  --badge-bg: #f38ba8;
+  --badge-text: #1e1e2e;
+  --modal-bg: #313244;
+  --input-bg: #45475a;
+  --border: #45475a;
+  --warning-bg: #f9e2af;
+  --warning-text: #1e1e2e;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: var(--sidebar-bg);
+}
+
+#app {
+  display: flex;
+  height: 100vh;
+}
+
+/* ── Sidebar ── */
+#sidebar {
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  background: var(--sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+#sidebar::-webkit-scrollbar { display: none; }
+
+#profile-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0;
+  flex: 1;
+  width: 100%;
+}
+
+.profile-entry {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, border-radius 0.15s;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 20px;
+  flex-direction: column;
+}
+
+.profile-entry:hover {
+  background: var(--sidebar-hover);
+  border-radius: 14px;
+}
+
+.profile-entry.active {
+  background: var(--sidebar-active);
+  border-radius: 16px;
+}
+
+.profile-entry .profile-label {
+  font-size: 9px;
+  color: var(--text-muted);
+  text-align: center;
+  max-width: 46px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 16px;
+  height: 16px;
+  background: var(--badge-bg);
+  color: var(--badge-text);
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  pointer-events: none;
+}
+
+.profile-entry .ctx-menu-btn {
+  display: none;
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  font-size: 10px;
+  background: var(--sidebar-active);
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  color: var(--text-muted);
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-entry:hover .ctx-menu-btn { display: flex; }
+
+#sidebar-footer {
+  padding: 8px 0 12px;
+}
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--sidebar-active);
+  border: 2px dashed var(--border);
+  color: var(--text-muted);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.icon-btn:hover {
+  background: var(--sidebar-hover);
+  color: var(--accent);
+}
+
+/* ── Content / Webviews ── */
+#content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #181825;
+}
+
+#webview-container {
+  position: absolute;
+  inset: 0;
+}
+
+/* Prevent the active webview from swallowing pointer events while the
+   user is interacting with the sidebar (Electron compositor issue on Linux).
+   Must target <webview> directly — pointer-events on a parent div does not
+   propagate to webview children in Electron's hit-testing. */
+#sidebar:hover ~ #content webview {
+  pointer-events: none;
+}
+
+webview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: none;
+}
+
+webview.active {
+  display: flex;
+}
+
+#empty-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: var(--text-muted);
+}
+
+#empty-state button {
+  padding: 8px 20px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--sidebar-bg);
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* ── Modal ── */
+#modal-overlay,
+#rename-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+#modal-overlay.hidden,
+#rename-overlay.hidden { display: none; }
+
+#modal,
+#rename-modal {
+  background: var(--modal-bg);
+  border-radius: 12px;
+  padding: 24px;
+  min-width: 360px;
+  max-width: 480px;
+  width: 100%;
+}
+
+#modal h2,
+#rename-modal h2 {
+  margin-bottom: 20px;
+  font-size: 16px;
+}
+
+#modal label,
+#rename-modal label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+#modal input,
+#modal select,
+#rename-modal input {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+}
+
+#modal input:focus,
+#modal select:focus,
+#rename-modal input:focus {
+  border-color: var(--accent);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.modal-actions button {
+  padding: 8px 18px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.modal-actions button[type="submit"] {
+  background: var(--accent);
+  color: var(--sidebar-bg);
+}
+
+.modal-actions button[type="button"] {
+  background: var(--input-bg);
+  color: var(--text-primary);
+}
+
+/* ── Portal warning ── */
+#portal-warning {
+  position: fixed;
+  bottom: 0;
+  left: var(--sidebar-width);
+  right: 0;
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  padding: 10px 16px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 50;
+}
+
+#portal-warning.hidden { display: none; }
+
+#btn-dismiss-warning {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* ── Context menu ── */
+.ctx-menu {
+  position: fixed;
+  background: var(--modal-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 0;
+  min-width: 160px;
+  z-index: 200;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+
+.ctx-menu button {
+  display: block;
+  width: 100%;
+  padding: 8px 14px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.ctx-menu button:hover { background: var(--sidebar-hover); }
+.ctx-menu button.danger { color: var(--badge-bg); }
+.ctx-menu .separator {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 4px 0;
+}

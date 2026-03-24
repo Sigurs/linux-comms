@@ -1,0 +1,51 @@
+app-id: io.sigurs.LinuxComms
+runtime: org.freedesktop.Platform
+runtime-version: '23.08'
+sdk: org.freedesktop.Sdk
+base: org.electronjs.Electron2.BaseApp
+base-version: '23.08'
+
+command: linux-comms
+
+finish-args:
+  # Display
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  # Network (required for communication apps)
+  - --share=network
+  # Audio (PipeWire for calls)
+  - --socket=pulseaudio
+  - --filesystem=xdg-run/pipewire-0
+  # Session D-Bus (for xdg-desktop-portal)
+  - --socket=session-bus
+  # Portal access for screen sharing, camera, notifications
+  - --talk-name=org.freedesktop.portal.Desktop
+  - --talk-name=org.freedesktop.portal.ScreenCast
+  - --talk-name=org.freedesktop.portal.Camera
+  - --talk-name=org.freedesktop.Notifications
+  # User data
+  - --filesystem=xdg-config/linux-comms:create
+  - --filesystem=xdg-cache/linux-comms:create
+
+modules:
+  - name: linux-comms
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 linux-comms.sh /app/bin/linux-comms
+      - install -d /app/lib/linux-comms
+      - cp -r app/* /app/lib/linux-comms/
+      - install -Dm644 io.sigurs.LinuxComms.desktop /app/share/applications/io.sigurs.LinuxComms.desktop
+      - for size in 16 32 48 64 128 256 512; do
+          install -Dm644 assets/icons/${size}x${size}.png
+            /app/share/icons/hicolor/${size}x${size}/apps/io.sigurs.LinuxComms.png;
+        done
+      - install -Dm644 io.sigurs.LinuxComms.metainfo.xml
+          /app/share/metainfo/io.sigurs.LinuxComms.metainfo.xml
+    sources:
+      - type: dir
+        path: .
+
+# Wrapper script
+# linux-comms.sh sets Wayland/X11 flags and launches Electron

@@ -1,0 +1,83 @@
+{
+  "name": "linux-comms",
+  "version": "0.1.0",
+  "description": "Unified Linux desktop client for Teams, RocketChat, and more",
+  "main": "dist/main/index.js",
+  "private": true,
+  "scripts": {
+    "build": "npm run build:main && npm run build:renderer",
+    "build:main": "tsc -p tsconfig.main.json",
+    "build:renderer": "esbuild src/renderer/index.ts --bundle --outfile=dist/renderer/bundle.js --platform=browser --target=chrome130 && node scripts/copy-renderer-assets.mjs",
+    "build:picker": "esbuild src/renderer/picker.ts --bundle --outfile=dist/renderer/picker-bundle.js --platform=browser --target=chrome130",
+    "watch:main": "tsc -p tsconfig.main.json --watch --preserveWatchOutput",
+    "watch:renderer": "esbuild src/renderer/index.ts --bundle --outfile=dist/renderer/bundle.js --platform=browser --target=chrome130 --watch",
+    "start": "npm run build && npm run build:picker && electron .",
+    "dist": "npm run build && npm run build:picker && electron-builder --linux",
+    "dist:appimage": "npm run build && npm run build:picker && electron-builder --linux AppImage",
+    "dist:flatpak": "npm run build && npm run build:picker && electron-builder --linux flatpak",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\""
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "concurrently": "^9.0.0",
+    "esbuild": "^0.27.0",
+    "electron": "^41.0.0",
+    "electron-builder": "^26.0.0",
+    "eslint": "^8.57.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.6.0"
+  },
+  "build": {
+    "appId": "io.sigurs.LinuxComms",
+    "productName": "Linux Comms",
+    "copyright": "Copyright © 2026 sigurs",
+    "directories": {
+      "output": "release",
+      "buildResources": "assets"
+    },
+    "files": [
+      "dist/**/*",
+      "assets/**/*",
+      "!assets/*.svg"
+    ],
+    "linux": {
+      "target": [
+        { "target": "AppImage", "arch": ["x64"] }
+      ],
+      "category": "Network;InstantMessaging",
+      "icon": "assets/icons",
+      "desktop": {
+        "entry": {
+          "Name": "Linux Comms",
+          "Comment": "Unified communication client for Teams, RocketChat, and more",
+          "Keywords": "chat;communication;teams;rocketchat;video;voice",
+          "StartupWMClass": "linux-comms"
+        }
+      }
+    },
+    "flatpak": {
+      "runtimeVersion": "24.08",
+      "baseVersion": "24.08",
+      "sdk": "org.freedesktop.Sdk",
+      "runtime": "org.freedesktop.Platform",
+      "finishArgs": [
+        "--share=ipc",
+        "--share=network",
+        "--socket=wayland",
+        "--socket=fallback-x11",
+        "--socket=pulseaudio",
+        "--socket=session-bus",
+        "--device=dri",
+        "--filesystem=xdg-run/pipewire-0",
+        "--talk-name=org.freedesktop.portal.Desktop",
+        "--talk-name=org.freedesktop.portal.ScreenCast",
+        "--talk-name=org.freedesktop.portal.Camera",
+        "--talk-name=org.freedesktop.Notifications"
+      ]
+    },
+    "asar": true
+  }
+}

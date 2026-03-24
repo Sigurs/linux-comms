@@ -1,0 +1,72 @@
+export interface WebviewOptions {
+  userAgent?: string;
+  preloadOverrides?: Record<string, unknown>;
+  allowedPermissions?: string[];
+}
+
+export interface CommunicationProvider {
+  /** Unique kebab-case identifier, e.g. "teams" or "rocketchat" */
+  id: string;
+  /** Display name shown in sidebar */
+  name: string;
+  /** Path to icon (relative to assets/) or data URL */
+  icon: string;
+  /** Default URL to load; may be overridden per-profile */
+  defaultUrl: string;
+  /** Webview-level configuration (user agent, permissions) */
+  webviewOptions: WebviewOptions;
+  /** Provider-specific config fields shown when adding a new profile */
+  configFields?: ProviderConfigField[];
+}
+
+export interface ProviderConfigField {
+  key: string;
+  label: string;
+  type: 'text' | 'url' | 'password';
+  required: boolean;
+  placeholder?: string;
+}
+
+export interface Profile {
+  /** Unique UUID for this profile */
+  id: string;
+  /** Human-readable name set by the user */
+  name: string;
+  /** Provider ID this profile belongs to */
+  providerId: string;
+  /** Electron session partition key: "persist:<providerId>-<id>" */
+  partition: string;
+  /** Provider-specific config (e.g. RocketChat server URL) */
+  config: Record<string, string>;
+  /** Resolved URL for this profile (may differ from provider default) */
+  url: string;
+  /** Whether this profile is currently popped out in its own window */
+  poppedOut?: boolean;
+}
+
+export interface ProfilesData {
+  version: 1;
+  profiles: Profile[];
+  lastActiveProfileId?: string;
+}
+
+export type PortalStatus = 'available' | 'unavailable' | 'unknown';
+
+export interface DesktopSource {
+  id: string;
+  name: string;
+  thumbnailDataUrl: string;
+  displayId?: string;
+}
+
+export interface NotificationPayload {
+  profileId: string;
+  title: string;
+  body: string;
+  icon?: string;
+}
+
+export interface BadgeUpdate {
+  profileId: string;
+  count: number;
+}

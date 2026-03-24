@@ -1,0 +1,197 @@
+import type { Profile } from '../shared/types';
+
+/** Injected into each webview after dom-ready to bridge Notifications and screen sharing */
+const INJECTION_SCRIPT = `
+(function() {
+  if (!window.__linuxComms || window.__linuxCommsInjected) return;
+  window.__linuxCommsInjected = true;
+  const lc = window.__linuxComms;
+
+  // ── Notification override ──
+  const OrigNotif = window.Notification;
+  const MockNotif = function(title, options) {
+    lc.sendNotification(lc.__profileId || '', title, options && options.body ? options.body : '');
+    try { return new OrigNotif(title, options); } catch(e) { return {}; }
+  };
+  MockNotif.permission = 'granted';
+  MockNotif.requestPermission = function() { return Promise.resolve('granted'); };
+  Object.defineProperty(window, 'Notification', { value: MockNotif, writable: true });
+
+  // ── getDisplayMedia override (X11 only) ──
+  if (!lc.isWayland && navigator.mediaDevices) {
+    const origGetDisplayMedia = navigator.mediaDevices.getDisplayMedia
+      ? navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices)
+      : null;
+    navigator.mediaDevices.getDisplayMedia = async function(constraints) {
+      const sourceId = await lc.requestScreenShare();
+      if (!sourceId) throw new DOMException('Permission denied', 'NotAllowedError');
+      return navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          mandatory: {
+            chromeMediaSource: 'desktop',
+            chromeMediaSourceId: sourceId,
+          }
+        }
+      });
+    };
+  }
+})();
+`;
+
+type WebviewEl = Electron.WebviewTag & { profileId?: string };
+
+export class WebviewManager {
+  private webviews: Map<string, WebviewEl> = new Map();
+  private activeProfileId: string | null = null;
+  private container: HTMLElement;
+  private onBadgeChange: (profileId: string, count: number) => void;
+
+  constructor(
+    container: HTMLElement,
+    onBadgeChange: (profileId: string, count: number) => void
+  ) {
+    this.container = container;
+    this.onBadgeChange = onBadgeChange;
+  }
+
+  ensureWebview(profile: Profile): WebviewEl {
+    if (this.webviews.has(profile.id)) {
+      return this.webviews.get(profile.id)!;
+    }
+
+    const wv = document.createElement('webview') as WebviewEl;
+    wv.profileId = profile.id;
+
+    // Security settings
+    wv.setAttribute('src', profile.url);
+    wv.setAttribute('partition', profile.partition);
+    wv.setAttribute('allowpopups', '');
+    wv.setAttribute(
+      'preload',
+      // The preload path is resolved relative to the app bundle
+      `file://${getPreloadPath()}`
+    );
+
+    if (profile.providerId === 'teams') {
+      // Teams requires Chrome UA — set at webview level too (belt-and-suspenders)
+      wv.setAttribute(
+        'useragent',
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
+      );
+    }
+
+    // DOM-ready: inject overrides and store the profile ID in the preload context
+    wv.addEventListener('dom-ready', () => {
+      // Inject the profile ID into the webview so notifications carry the right ID
+      wv.executeJavaScript(`window.__linuxComms && (window.__linuxComms.__profileId = "${profile.id}");`)
+        .catch(() => {});
+      wv.executeJavaScript(INJECTION_SCRIPT).catch(() => {});
+
+      // Resume from backgroundThrottling if this is now active
+      if (this.activeProfileId === profile.id) {
+        wv.setZoomLevel(0);
+      }
+    });
+
+    // Title update → badge parsing
+    wv.addEventListener('page-title-updated', (e) => {
+      const title = (e as Event & { title: string }).title ?? '';
+      const match = /^\((\d+)\)/.exec(title);
+      const count = match ? parseInt(match[1], 10) : 0;
+      this.onBadgeChange(profile.id, count);
+    });
+
+    // Relay ipc-message from webview preload (badge updates via sendToHost)
+    wv.addEventListener('ipc-message', (e) => {
+      const ev = e as Event & { channel: string; args: unknown[] };
+      if (ev.channel === 'badge-update') {
+        this.onBadgeChange(profile.id, (ev.args[0] as number) ?? 0);
+      }
+    });
+
+    this.container.appendChild(wv);
+    this.webviews.set(profile.id, wv);
+    return wv;
+  }
+
+  switchTo(profileId: string): void {
+    if (this.activeProfileId === profileId) return;
+
+    // Hide previous
+    if (this.activeProfileId) {
+      const prev = this.webviews.get(this.activeProfileId);
+      if (prev) {
+        prev.classList.remove('active');
+      }
+    }
+
+    // Show new
+    const next = this.webviews.get(profileId);
+    if (next) {
+      next.classList.add('active');
+    }
+
+    this.activeProfileId = profileId;
+    window.electronAPI.setActiveProfile(profileId);
+    document.getElementById('empty-state')!.style.display = 'none';
+  }
+
+  getActiveProfileId(): string | null {
+    return this.activeProfileId;
+  }
+
+  removeWebview(profileId: string): void {
+    const wv = this.webviews.get(profileId);
+    if (!wv) return;
+    wv.remove();
+    this.webviews.delete(profileId);
+    if (this.activeProfileId === profileId) {
+      this.activeProfileId = null;
+    }
+  }
+
+  popOut(profileId: string): void {
+    window.electronAPI.openPopout(profileId);
+    // Hide the embedded webview while it's popped out
+    const wv = this.webviews.get(profileId);
+    if (wv) {
+      wv.classList.remove('active');
+    }
+    if (this.activeProfileId === profileId) {
+      this.activeProfileId = null;
+    }
+  }
+
+  restorePopout(profileId: string): void {
+    this.switchTo(profileId);
+  }
+}
+
+function getPreloadPath(): string {
+  // In packaged app __dirname is inside asar; build a path to the preload
+  // dist/renderer/bundle.js is the running script, preload is at dist/preload/webview-preload.js
+  const base = window.location.pathname.replace(/\/renderer\/.*$/, '');
+  return `${base}/preload/webview-preload.js`;
+}
+
+// Extend Window type for our API
+declare global {
+  interface Window {
+    electronAPI: {
+      isWayland: () => Promise<boolean>;
+      getAll: () => Promise<{ profiles: Profile[]; providers: { id: string; name: string; icon: string }[] }>;
+      addProfile: (providerId: string, name: string, config: Record<string, string>) => Promise<Profile>;
+      removeProfile: (profileId: string, partition: string) => Promise<void>;
+      renameProfile: (profileId: string, newName: string) => Promise<Profile>;
+      setActiveProfile: (profileId: string) => void;
+      getPortalStatus: () => Promise<{ status: string; isWayland: boolean }>;
+      showScreenSharePicker: () => Promise<string | null>;
+      openPopout: (profileId: string) => void;
+      onProfileUpdated: (cb: (data: { profiles: Profile[]; providers: unknown[] }) => void) => () => void;
+      onNotificationClick: (cb: (profileId: string) => void) => () => void;
+      onPortalStatus: (cb: (data: { status: string; isWayland: boolean }) => void) => () => void;
+      onPopoutClosed: (cb: (profileId: string) => void) => () => void;
+    };
+  }
+}
