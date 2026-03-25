@@ -1,14 +1,7 @@
 name: Build
 
 on:
-  push:
-    branches: [master]
-    paths:
-      - 'src/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'tsconfig*.json'
-      - '.github/workflows/build.yml'
+  workflow_dispatch:
 
 jobs:
   build:
