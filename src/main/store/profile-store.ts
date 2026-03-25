@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 import type { Profile, ProfilesData } from '../../shared/types';
+import { ZOOM_MIN, ZOOM_MAX } from '../../shared/types';
 import { getProvider } from '../../providers';
 
 function getProfilesPath(): string {
@@ -92,4 +93,31 @@ export function renameProfile(id: string, newName: string): Profile | undefined 
   profile.name = newName;
   save(data);
   return profile;
+}
+
+export function updateZoomLevel(id: string, zoomLevel: number): Profile | undefined {
+  const data = load();
+  const profile = data.profiles.find((p) => p.id === id);
+  if (!profile) return undefined;
+
+  const clampedZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoomLevel));
+  if (clampedZoom !== zoomLevel) {
+    console.warn(`[profile-store] Zoom level ${zoomLevel} clamped to ${clampedZoom}`);
+  }
+
+  if (clampedZoom === 0) {
+    delete profile.zoomLevel;
+  } else {
+    profile.zoomLevel = clampedZoom;
+  }
+
+  save(data);
+  return profile;
+}
+
+export function getProfile(id: string): Profile | undefined {
+  const data = load();
+  const profile = data.profiles.find((p) => p.id === id);
+  if (!profile) return undefined;
+  return { ...profile, zoomLevel: profile.zoomLevel ?? 0 };
 }

@@ -32,6 +32,12 @@ export function registerProfileIpc(): void {
   ipcMain.on(IPC.PROFILE_SET_ACTIVE, (_event, profileId: string) => {
     store.setLastActiveProfileId(profileId);
   });
+
+  ipcMain.handle(IPC.PROFILE_UPDATE_ZOOM, (_event, profileId: string, zoomLevel: number) => {
+    const profile = store.updateZoomLevel(profileId, zoomLevel);
+    broadcastProfileUpdate();
+    return profile;
+  });
 }
 
 function broadcastProfileUpdate(): void {

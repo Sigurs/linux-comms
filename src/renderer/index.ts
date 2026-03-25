@@ -1,9 +1,16 @@
 import type { Profile } from '../shared/types';
+import { ZOOM_MIN, ZOOM_MAX } from '../shared/types';
 import { Sidebar } from './sidebar';
 import { WebviewManager } from './webview-manager';
 
 type Provider = { id: string; name: string; icon: string };
-type ProviderField = { key: string; label: string; type: string; required: boolean; placeholder?: string };
+type ProviderField = {
+  key: string;
+  label: string;
+  type: string;
+  required: boolean;
+  placeholder?: string;
+};
 
 let profiles: Profile[] = [];
 let providerList: Provider[] = [];
@@ -161,6 +168,28 @@ function setupKeyboardShortcuts() {
       if (profile) activateProfile(profile.id);
     }
   });
+
+  webviewContainer.addEventListener(
+    'wheel',
+    (e: WheelEvent) => {
+      if (!e.ctrlKey || !activeProfileId) return;
+
+      e.preventDefault();
+
+      const profile = webviewManager.getProfile(activeProfileId);
+      if (!profile) return;
+
+      const currentZoom = profile.zoomLevel ?? 0;
+      const delta = e.deltaY < 0 ? 1 : -1;
+      const newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, currentZoom + delta));
+
+      if (newZoom !== currentZoom) {
+        webviewManager.applyZoom(activeProfileId, newZoom);
+        window.electronAPI.updateZoomLevel(activeProfileId, newZoom);
+      }
+    },
+    { passive: false }
+  );
 }
 
 function activateProfile(profileId: string) {

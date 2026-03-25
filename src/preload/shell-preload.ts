@@ -15,8 +15,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke(IPC.PROFILE_REMOVE, profileId, partition),
   renameProfile: (profileId: string, newName: string) =>
     ipcRenderer.invoke(IPC.PROFILE_RENAME, profileId, newName),
-  setActiveProfile: (profileId: string) =>
-    ipcRenderer.send(IPC.PROFILE_SET_ACTIVE, profileId),
+  setActiveProfile: (profileId: string) => ipcRenderer.send(IPC.PROFILE_SET_ACTIVE, profileId),
+  updateZoomLevel: (profileId: string, zoomLevel: number) =>
+    ipcRenderer.invoke(IPC.PROFILE_UPDATE_ZOOM, profileId, zoomLevel),
 
   // Portal / screen share (X11 only)
   getPortalStatus: () => ipcRenderer.invoke(IPC.PORTAL_STATUS),
@@ -26,9 +27,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openPopout: (profileId: string) => ipcRenderer.send(IPC.POPOUT_OPEN, profileId),
 
   // Event subscriptions
-  onProfileUpdated: (
-    cb: (data: { profiles: Profile[]; providers: unknown[] }) => void
-  ) => {
+  onProfileUpdated: (cb: (data: { profiles: Profile[]; providers: unknown[] }) => void) => {
     const listener = (_: unknown, data: { profiles: Profile[]; providers: unknown[] }) => cb(data);
     ipcRenderer.on(IPC.PROFILE_UPDATED, listener);
     return () => ipcRenderer.removeListener(IPC.PROFILE_UPDATED, listener);

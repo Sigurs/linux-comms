@@ -27,6 +27,9 @@ export interface ProviderConfigField {
   placeholder?: string;
 }
 
+export const ZOOM_MIN = -1;
+export const ZOOM_MAX = 9;
+
 export interface Profile {
   /** Unique UUID for this profile */
   id: string;
@@ -42,6 +45,8 @@ export interface Profile {
   url: string;
   /** Whether this profile is currently popped out in its own window */
   poppedOut?: boolean;
+  /** Zoom level for this profile (-1 to +9, where 0 is 100%) */
+  zoomLevel?: number;
 }
 
 export interface ProfilesData {

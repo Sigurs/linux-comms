@@ -6,6 +6,7 @@ export const IPC = {
   PROFILE_REMOVE: 'profile:remove',
   PROFILE_RENAME: 'profile:rename',
   PROFILE_SET_ACTIVE: 'profile:set-active',
+  PROFILE_UPDATE_ZOOM: 'profile:update-zoom',
   PROFILE_UPDATED: 'profile:updated', // main → renderer (push)
 
   // Screen sharing

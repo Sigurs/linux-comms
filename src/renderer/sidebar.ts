@@ -1,4 +1,5 @@
 import type { Profile } from '../shared/types';
+import { ZOOM_MIN, ZOOM_MAX } from '../shared/types';
 import type { WebviewManager } from './webview-manager';
 
 type Provider = { id: string; name: string; icon: string };
@@ -11,6 +12,8 @@ const PROVIDER_EMOJI: Record<string, string> = {
 export class Sidebar {
   private profileList: HTMLElement;
   private badges: Map<string, number> = new Map();
+  private zoomLevels: Map<string, number> = new Map();
+  private onZoomChange?: (profileId: string, zoomLevel: number) => void;
 
   constructor(
     private webviewManager: WebviewManager,
@@ -19,10 +22,15 @@ export class Sidebar {
     this.profileList = document.getElementById('profile-list')!;
   }
 
+  setOnZoomChange(cb: (profileId: string, zoomLevel: number) => void): void {
+    this.onZoomChange = cb;
+  }
+
   render(profiles: Profile[], providers: Provider[], activeProfileId: string | null): void {
     this.profileList.innerHTML = '';
 
     for (const profile of profiles) {
+      this.zoomLevels.set(profile.id, profile.zoomLevel ?? 0);
       const entry = this.createEntry(profile, providers, activeProfileId);
       this.profileList.appendChild(entry);
     }
@@ -98,14 +106,16 @@ export class Sidebar {
   }
 
   private showContextMenu(profile: Profile, e: MouseEvent): void {
-    // Remove any existing context menu
     document.querySelector('.ctx-menu')?.remove();
 
-    // Prevent the active webview from swallowing clicks on the menu.
-    // Must target <webview> elements directly — pointer-events on the
-    // container div does not propagate to webview children in Electron.
     const webviews = Array.from(document.querySelectorAll<HTMLElement>('webview'));
-    webviews.forEach((wv) => { wv.style.pointerEvents = 'none'; });
+    webviews.forEach((wv) => {
+      wv.style.pointerEvents = 'none';
+    });
+
+    const currentZoom = this.zoomLevels.get(profile.id) ?? 0;
+    const canZoomIn = currentZoom < ZOOM_MAX;
+    const canZoomOut = currentZoom > ZOOM_MIN;
 
     const menu = document.createElement('div');
     menu.className = 'ctx-menu';
@@ -116,12 +126,18 @@ export class Sidebar {
       <button data-action="popout">Pop out</button>
       <button data-action="rename">Rename</button>
       <hr class="separator" />
+      <button data-action="zoom-in" ${!canZoomIn ? 'disabled' : ''}>Zoom In</button>
+      <button data-action="zoom-out" ${!canZoomOut ? 'disabled' : ''}>Zoom Out</button>
+      <button data-action="zoom-reset" ${currentZoom === 0 ? 'disabled' : ''}>Reset Zoom</button>
+      <hr class="separator" />
       <button data-action="remove" class="danger">Remove Profile</button>
     `;
 
     const restoreAndRemove = () => {
       menu.remove();
-      webviews.forEach((wv) => { wv.style.pointerEvents = ''; });
+      webviews.forEach((wv) => {
+        wv.style.pointerEvents = '';
+      });
     };
 
     menu.addEventListener('click', async (ev) => {
@@ -134,6 +150,12 @@ export class Sidebar {
         if (newName) {
           await window.electronAPI.renameProfile(profile.id, newName);
         }
+      } else if (action === 'zoom-in') {
+        await this.handleZoomChange(profile.id, currentZoom + 1);
+      } else if (action === 'zoom-out') {
+        await this.handleZoomChange(profile.id, currentZoom - 1);
+      } else if (action === 'zoom-reset') {
+        await this.handleZoomChange(profile.id, 0);
       } else if (action === 'remove') {
         if (confirm(`Remove profile "${profile.name}"?`)) {
           await window.electronAPI.removeProfile(profile.id, profile.partition);
@@ -143,6 +165,14 @@ export class Sidebar {
 
     document.body.appendChild(menu);
     document.addEventListener('click', restoreAndRemove, { once: true });
+  }
+
+  private async handleZoomChange(profileId: string, newZoom: number): Promise<void> {
+    const clampedZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, newZoom));
+    this.zoomLevels.set(profileId, clampedZoom);
+    this.webviewManager.applyZoom(profileId, clampedZoom);
+    await window.electronAPI.updateZoomLevel(profileId, clampedZoom);
+    this.onZoomChange?.(profileId, clampedZoom);
   }
 
   private showRenameDialog(currentName: string): Promise<string | null> {
@@ -171,8 +201,13 @@ export class Sidebar {
         resolve(value || null);
       };
 
-      const onCancel = () => { cleanup(); resolve(null); };
-      const onOverlayClick = (e: MouseEvent) => { if (e.target === overlay) onCancel(); };
+      const onCancel = () => {
+        cleanup();
+        resolve(null);
+      };
+      const onOverlayClick = (e: MouseEvent) => {
+        if (e.target === overlay) onCancel();
+      };
 
       form.addEventListener('submit', onSubmit, { once: true });
       cancelBtn.addEventListener('click', onCancel, { once: true });

@@ -43,19 +43,19 @@ type WebviewEl = Electron.WebviewTag & { profileId?: string };
 
 export class WebviewManager {
   private webviews: Map<string, WebviewEl> = new Map();
+  private profiles: Map<string, Profile> = new Map();
   private activeProfileId: string | null = null;
   private container: HTMLElement;
   private onBadgeChange: (profileId: string, count: number) => void;
 
-  constructor(
-    container: HTMLElement,
-    onBadgeChange: (profileId: string, count: number) => void
-  ) {
+  constructor(container: HTMLElement, onBadgeChange: (profileId: string, count: number) => void) {
     this.container = container;
     this.onBadgeChange = onBadgeChange;
   }
 
   ensureWebview(profile: Profile): WebviewEl {
+    this.profiles.set(profile.id, profile);
+
     if (this.webviews.has(profile.id)) {
       return this.webviews.get(profile.id)!;
     }
@@ -84,13 +84,14 @@ export class WebviewManager {
     // DOM-ready: inject overrides and store the profile ID in the preload context
     wv.addEventListener('dom-ready', () => {
       // Inject the profile ID into the webview so notifications carry the right ID
-      wv.executeJavaScript(`window.__linuxComms && (window.__linuxComms.__profileId = "${profile.id}");`)
-        .catch(() => {});
+      wv.executeJavaScript(
+        `window.__linuxComms && (window.__linuxComms.__profileId = "${profile.id}");`
+      ).catch(() => {});
       wv.executeJavaScript(INJECTION_SCRIPT).catch(() => {});
 
-      // Resume from backgroundThrottling if this is now active
+      // Apply profile's zoom level
       if (this.activeProfileId === profile.id) {
-        wv.setZoomLevel(0);
+        wv.setZoomLevel(profile.zoomLevel ?? 0);
       }
     });
 
@@ -130,11 +131,27 @@ export class WebviewManager {
     const next = this.webviews.get(profileId);
     if (next) {
       next.classList.add('active');
+      const profile = this.profiles.get(profileId);
+      if (profile) {
+        next.setZoomLevel(profile.zoomLevel ?? 0);
+      }
     }
 
     this.activeProfileId = profileId;
     window.electronAPI.setActiveProfile(profileId);
     document.getElementById('empty-state')!.style.display = 'none';
+  }
+
+  applyZoom(profileId: string, zoomLevel: number): void {
+    this.profiles.set(profileId, { ...this.profiles.get(profileId)!, zoomLevel });
+    const wv = this.webviews.get(profileId);
+    if (wv) {
+      wv.setZoomLevel(zoomLevel);
+    }
+  }
+
+  getProfile(profileId: string): Profile | undefined {
+    return this.profiles.get(profileId);
   }
 
   getActiveProfileId(): string | null {
@@ -180,15 +197,25 @@ declare global {
   interface Window {
     electronAPI: {
       isWayland: () => Promise<boolean>;
-      getAll: () => Promise<{ profiles: Profile[]; providers: { id: string; name: string; icon: string }[] }>;
-      addProfile: (providerId: string, name: string, config: Record<string, string>) => Promise<Profile>;
+      getAll: () => Promise<{
+        profiles: Profile[];
+        providers: { id: string; name: string; icon: string }[];
+      }>;
+      addProfile: (
+        providerId: string,
+        name: string,
+        config: Record<string, string>
+      ) => Promise<Profile>;
       removeProfile: (profileId: string, partition: string) => Promise<void>;
       renameProfile: (profileId: string, newName: string) => Promise<Profile>;
       setActiveProfile: (profileId: string) => void;
+      updateZoomLevel: (profileId: string, zoomLevel: number) => Promise<Profile | undefined>;
       getPortalStatus: () => Promise<{ status: string; isWayland: boolean }>;
       showScreenSharePicker: () => Promise<string | null>;
       openPopout: (profileId: string) => void;
-      onProfileUpdated: (cb: (data: { profiles: Profile[]; providers: unknown[] }) => void) => () => void;
+      onProfileUpdated: (
+        cb: (data: { profiles: Profile[]; providers: unknown[] }) => void
+      ) => () => void;
       onNotificationClick: (cb: (profileId: string) => void) => () => void;
       onPortalStatus: (cb: (data: { status: string; isWayland: boolean }) => void) => () => void;
       onPopoutClosed: (cb: (profileId: string) => void) => () => void;
