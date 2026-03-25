@@ -39,6 +39,17 @@ async function init() {
   setupEventListeners();
   setupKeyboardShortcuts();
   checkPortalStatus();
+
+  // Display build version in sidebar footer
+  const versionEl = document.getElementById('app-version');
+  if (versionEl) {
+    const version = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
+    versionEl.textContent = version;
+    versionEl.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      navigator.clipboard.writeText(version);
+    });
+  }
 }
 
 function renderSidebar() {

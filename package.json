@@ -7,8 +7,8 @@
   "scripts": {
     "build": "npm run build:main && npm run build:renderer",
     "build:main": "tsc -p tsconfig.main.json",
-    "build:renderer": "esbuild src/renderer/index.ts --bundle --outfile=dist/renderer/bundle.js --platform=browser --target=chrome130 && node scripts/copy-renderer-assets.mjs",
-    "build:picker": "esbuild src/renderer/picker.ts --bundle --outfile=dist/renderer/picker-bundle.js --platform=browser --target=chrome130",
+    "build:renderer": "BUILD_VERSION=$(date -u +%y%m%d-%H%M) && esbuild src/renderer/index.ts --bundle --outfile=dist/renderer/bundle.js --platform=browser --target=chrome130 --define:__APP_VERSION__=\\\"$BUILD_VERSION\\\" && node scripts/copy-renderer-assets.mjs",
+    "build:picker": "BUILD_VERSION=$(date -u +%y%m%d-%H%M) && esbuild src/renderer/picker.ts --bundle --outfile=dist/renderer/picker-bundle.js --platform=browser --target=chrome130 --define:__APP_VERSION__=\\\"$BUILD_VERSION\\\"",
     "watch:main": "tsc -p tsconfig.main.json --watch --preserveWatchOutput",
     "watch:renderer": "esbuild src/renderer/index.ts --bundle --outfile=dist/renderer/bundle.js --platform=browser --target=chrome130 --watch",
     "start": "npm run build && npm run build:picker && electron .",
@@ -45,7 +45,12 @@
     ],
     "linux": {
       "target": [
-        { "target": "AppImage", "arch": ["x64"] }
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
       "category": "Network;InstantMessaging",
       "icon": "assets/icons",

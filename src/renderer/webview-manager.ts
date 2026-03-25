@@ -133,7 +133,11 @@ export class WebviewManager {
       next.classList.add('active');
       const profile = this.profiles.get(profileId);
       if (profile) {
-        next.setZoomLevel(profile.zoomLevel ?? 0);
+        try {
+          next.setZoomLevel(profile.zoomLevel ?? 0);
+        } catch {
+          // Webview not ready yet; dom-ready handler will apply zoom
+        }
       }
     }
 

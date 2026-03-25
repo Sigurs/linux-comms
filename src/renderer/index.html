@@ -1,76 +1,79 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Linux Comms</title>
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-  <div id="app">
-    <aside id="sidebar">
-<nav id="profile-list"></nav>
-      <div id="sidebar-footer">
-        <button id="btn-add-profile" class="icon-btn" title="Add profile">+</button>
-      </div>
-    </aside>
-
-    <main id="content">
-      <div id="webview-container"></div>
-      <div id="empty-state">
-        <p>Add a profile to get started.</p>
-        <button id="btn-add-profile-empty">Add profile</button>
-      </div>
-    </main>
-  </div>
-
-  <!-- Add profile modal -->
-  <div id="modal-overlay" class="hidden">
-    <div id="modal" role="dialog" aria-modal="true">
-      <h2 id="modal-title">Add Profile</h2>
-      <form id="add-profile-form">
-        <label>
-          Provider
-          <select id="provider-select"></select>
-        </label>
-        <label>
-          Profile Name
-          <input id="profile-name" type="text" placeholder="e.g. Work" required />
-        </label>
-        <div id="provider-extra-fields"></div>
-        <div class="modal-actions">
-          <button type="button" id="btn-modal-cancel">Cancel</button>
-          <button type="submit">Add</button>
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Linux Comms</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <aside id="sidebar">
+        <nav id="profile-list"></nav>
+        <div id="sidebar-footer">
+          <button id="btn-add-profile" class="icon-btn" title="Add profile">+</button>
+          <span id="app-version"></span>
         </div>
-      </form>
-    </div>
-  </div>
+      </aside>
 
-  <!-- Rename profile modal -->
-  <div id="rename-overlay" class="hidden">
-    <div id="rename-modal" role="dialog" aria-modal="true">
-      <h2>Rename Profile</h2>
-      <form id="rename-form">
-        <label>
-          Name
-          <input id="rename-input" type="text" required />
-        </label>
-        <div class="modal-actions">
-          <button type="button" id="btn-rename-cancel">Cancel</button>
-          <button type="submit">Rename</button>
+      <main id="content">
+        <div id="webview-container"></div>
+        <div id="empty-state">
+          <p>Add a profile to get started.</p>
+          <button id="btn-add-profile-empty">Add profile</button>
         </div>
-      </form>
+      </main>
     </div>
-  </div>
 
-  <!-- Portal warning banner -->
-  <div id="portal-warning" class="hidden">
-    ⚠ Screen sharing requires xdg-desktop-portal which was not detected on this system.
-    <button id="btn-dismiss-warning">✕</button>
-  </div>
+    <!-- Add profile modal -->
+    <div id="modal-overlay" class="hidden">
+      <div id="modal" role="dialog" aria-modal="true">
+        <h2 id="modal-title">Add Profile</h2>
+        <form id="add-profile-form">
+          <label>
+            Provider
+            <select id="provider-select"></select>
+          </label>
+          <label>
+            Profile Name
+            <input id="profile-name" type="text" placeholder="e.g. Work" required />
+          </label>
+          <div id="provider-extra-fields"></div>
+          <div class="modal-actions">
+            <button type="button" id="btn-modal-cancel">Cancel</button>
+            <button type="submit">Add</button>
+          </div>
+        </form>
+      </div>
+    </div>
 
-  <script src="bundle.js"></script>
-</body>
+    <!-- Rename profile modal -->
+    <div id="rename-overlay" class="hidden">
+      <div id="rename-modal" role="dialog" aria-modal="true">
+        <h2>Rename Profile</h2>
+        <form id="rename-form">
+          <label>
+            Name
+            <input id="rename-input" type="text" required />
+          </label>
+          <div class="modal-actions">
+            <button type="button" id="btn-rename-cancel">Cancel</button>
+            <button type="submit">Rename</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Portal warning banner -->
+    <div id="portal-warning" class="hidden">
+      ⚠ Screen sharing requires xdg-desktop-portal which was not detected on this system.
+      <button id="btn-dismiss-warning">✕</button>
+    </div>
+
+    <script src="bundle.js"></script>
+  </body>
 </html>
