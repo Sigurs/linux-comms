@@ -1,4 +1,6 @@
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -11,7 +13,7 @@
   --sidebar-hover: #2a2a3e;
   --accent: #89b4fa;
   --text-primary: #cdd6f4;
-  --text-muted: #6c7086;
+  --text-muted: #9399b2;
   --badge-bg: #f38ba8;
   --badge-text: #1e1e2e;
   --modal-bg: #313244;
@@ -21,10 +23,14 @@
   --warning-text: #1e1e2e;
 }
 
-html, body {
+html,
+body {
   height: 100%;
   overflow: hidden;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
   font-size: 14px;
   color: var(--text-primary);
   background: var(--sidebar-bg);
@@ -48,7 +54,9 @@ html, body {
   scrollbar-width: none;
 }
 
-#sidebar::-webkit-scrollbar { display: none; }
+#sidebar::-webkit-scrollbar {
+  display: none;
+}
 
 #profile-list {
   display: flex;
@@ -62,19 +70,63 @@ html, body {
 
 .profile-entry {
   position: relative;
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.15s, border-radius 0.15s;
+  transition:
+    background 0.15s,
+    border-radius 0.15s;
   background: transparent;
   border: none;
   color: var(--text-primary);
-  font-size: 20px;
+  font-size: 21px;
   flex-direction: column;
+  gap: 2px;
+}
+
+.profile-entry:hover {
+  background: var(--sidebar-hover);
+  border-radius: 16px;
+}
+
+.profile-entry.active {
+  background: var(--sidebar-active);
+  border-radius: 18px;
+}
+
+.profile-entry .profile-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-align: center;
+  max-width: 50px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-entry:hover {
+  background: var(--sidebar-hover);
+  border-radius: 16px;
+}
+
+.profile-entry.active {
+  background: var(--sidebar-active);
+  border-radius: 18px;
+}
+
+.profile-entry .profile-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-align: center;
+  max-width: 54px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .profile-entry:hover {
@@ -101,17 +153,17 @@ html, body {
   position: absolute;
   top: 4px;
   right: 4px;
-  min-width: 16px;
-  height: 16px;
+  min-width: 18px;
+  height: 18px;
   background: var(--badge-bg);
   color: var(--badge-text);
-  border-radius: 8px;
-  font-size: 10px;
+  border-radius: 9px;
+  font-size: 11px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 3px;
+  padding: 0 4px;
   pointer-events: none;
 }
 
@@ -132,25 +184,29 @@ html, body {
   justify-content: center;
 }
 
-.profile-entry:hover .ctx-menu-btn { display: flex; }
+.profile-entry:hover .ctx-menu-btn {
+  display: flex;
+}
 
 #sidebar-footer {
   padding: 8px 0 12px;
 }
 
 .icon-btn {
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   background: var(--sidebar-active);
   border: 2px dashed var(--border);
   color: var(--text-muted);
-  font-size: 20px;
+  font-size: 21px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
 .icon-btn:hover {
@@ -218,7 +274,7 @@ webview.active {
 #rename-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -226,7 +282,9 @@ webview.active {
 }
 
 #modal-overlay.hidden,
-#rename-overlay.hidden { display: none; }
+#rename-overlay.hidden {
+  display: none;
+}
 
 #modal,
 #rename-modal {
@@ -288,12 +346,12 @@ webview.active {
   font-weight: 500;
 }
 
-.modal-actions button[type="submit"] {
+.modal-actions button[type='submit'] {
   background: var(--accent);
   color: var(--sidebar-bg);
 }
 
-.modal-actions button[type="button"] {
+.modal-actions button[type='button'] {
   background: var(--input-bg);
   color: var(--text-primary);
 }
@@ -314,7 +372,9 @@ webview.active {
   z-index: 50;
 }
 
-#portal-warning.hidden { display: none; }
+#portal-warning.hidden {
+  display: none;
+}
 
 #btn-dismiss-warning {
   margin-left: auto;
@@ -333,7 +393,7 @@ webview.active {
   padding: 4px 0;
   min-width: 160px;
   z-index: 200;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
 .ctx-menu button {
@@ -348,8 +408,12 @@ webview.active {
   font-size: 13px;
 }
 
-.ctx-menu button:hover { background: var(--sidebar-hover); }
-.ctx-menu button.danger { color: var(--badge-bg); }
+.ctx-menu button:hover {
+  background: var(--sidebar-hover);
+}
+.ctx-menu button.danger {
+  color: var(--badge-bg);
+}
 .ctx-menu .separator {
   border: none;
   border-top: 1px solid var(--border);
