@@ -56,18 +56,14 @@ export class Sidebar {
       <span class="profile-icon">${emoji}</span>
       <span class="profile-label">${escapeHtml(profile.name)}</span>
       ${badgeCount > 0 ? `<span class="badge">${badgeCount > 99 ? '99+' : badgeCount}</span>` : ''}
-      <span class="ctx-menu-btn" data-profile-id="${profile.id}" title="Options" tabindex="-1">⋮</span>
     `;
 
-    btn.addEventListener('click', (e) => {
-      // Ignore clicks on the ctx menu button
-      if ((e.target as HTMLElement).classList.contains('ctx-menu-btn')) return;
+    btn.addEventListener('click', () => {
       this.onActivate(profile.id);
     });
 
-    const ctxBtn = btn.querySelector<HTMLElement>('.ctx-menu-btn')!;
-    ctxBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
+    btn.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
       this.showContextMenu(profile, e);
     });
 

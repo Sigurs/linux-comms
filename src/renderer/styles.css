@@ -167,27 +167,6 @@ body {
   pointer-events: none;
 }
 
-.profile-entry .ctx-menu-btn {
-  display: none;
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 14px;
-  height: 14px;
-  font-size: 10px;
-  background: var(--sidebar-active);
-  border: none;
-  border-radius: 3px;
-  cursor: pointer;
-  color: var(--text-muted);
-  align-items: center;
-  justify-content: center;
-}
-
-.profile-entry:hover .ctx-menu-btn {
-  display: flex;
-}
-
 #sidebar-footer {
   padding: 8px 0 8px;
   display: flex;
