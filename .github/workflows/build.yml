@@ -1,7 +1,14 @@
 name: Build
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig*.json'
+      - '.github/workflows/build.yml'
 
 jobs:
   build:
@@ -22,20 +29,8 @@ jobs:
       - name: Build
         run: npm run build && npm run build:picker
 
-      - name: Install Flatpak SDK
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y flatpak flatpak-builder
-          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-          flatpak install --user -y flathub org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08 org.electronjs.Electron2.BaseApp//24.08
-
       - name: Build AppImage
         run: npx electron-builder --linux AppImage
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build Flatpak
-        run: npx electron-builder --linux flatpak
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -44,9 +39,3 @@ jobs:
         with:
           name: linux-comms-appimage
           path: release/*.AppImage
-
-      - name: Upload Flatpak
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-comms-flatpak
-          path: release/*.flatpak
