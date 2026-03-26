@@ -26,11 +26,29 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Get today's date
+        id: date
+        run: echo "today=$(date -u +%y%m%d)" >> $GITHUB_OUTPUT
+
+      - name: Restore build counter
+        uses: actions/cache/restore@v4
+        with:
+          path: .build-counter.json
+          key: build-counter-${{ steps.date.outputs.today }}-${{ github.run_number }}
+          restore-keys: |
+            build-counter-${{ steps.date.outputs.today }}-
+
       - name: Bump version
         run: node scripts/version.mjs --bump
 
+      - name: Save build counter
+        uses: actions/cache/save@v4
+        with:
+          path: .build-counter.json
+          key: build-counter-${{ steps.date.outputs.today }}-${{ github.run_number }}
+
       - name: Build
-        run: npm run build && npm run build:picker
+        run: npm run build:main && npm run build:renderer:prod && npm run build:picker:prod
 
       - name: Build AppImage
         run: npx electron-builder --linux AppImage
