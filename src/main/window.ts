@@ -12,6 +12,7 @@ export function createMainWindow(): BrowserWindow {
     minWidth: 800,
     minHeight: 600,
     title: 'Linux Comms',
+    icon: join(__dirname, '../../assets/icons/256x256.png'),
     autoHideMenuBar: true,
     show: false,
     backgroundColor: '#1e1e2e',

@@ -32,6 +32,7 @@ export function registerPopoutIpc(): void {
       width: 1200,
       height: 800,
       title: `${provider.name} — ${profile.name}`,
+      icon: join(__dirname, '../../../assets/icons/256x256.png'),
       autoHideMenuBar: true,
       webPreferences: {
         contextIsolation: true,
