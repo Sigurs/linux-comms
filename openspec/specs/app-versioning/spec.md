@@ -1,23 +1,45 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Build-time version generation
 
-The build process SHALL generate a version string in YYMMDD-HHMM format using the current UTC time.
+The build process SHALL generate a version string using a CalVer-inspired scheme formatted as `YY.MMDD.N` (valid semver, e.g. `26.326.1`) for release builds, and `YY.MMDD.dev` (e.g. `26.326.dev`) for local development builds. `MMDD` SHALL be computed as `month * 100 + day` with no leading zeros (e.g. January 5 → `105`, March 26 → `326`, December 31 → `1231`). The same version string SHALL be used for both the AppImage filename and the in-app version display.
 
-#### Scenario: Version generated during build
+#### Scenario: Version generated during dev build
 
-- **WHEN** the renderer bundle is built
-- **THEN** a version string SHALL be generated in YYMMDD-HHMM format (e.g., 260325-1945)
-- **AND** the version SHALL use UTC time
+- **WHEN** developer runs npm start/build
+- **THEN** version in `YY.MMDD.dev` format, uses UTC date, package.json NOT modified
+
+#### Scenario: Version generated during release build
+
+- **WHEN** release build triggered
+- **THEN** `YY.MMDD.N` format, N starts at 1 and increments per same UTC date, resets on new date, package.json version field updated
+
+#### Scenario: Build counter persisted locally
+
+- **WHEN** release build completes
+- **THEN** count stored in .build-counter.json with UTC date and count, file is gitignored
+
+#### Scenario: Build counter resets on new day
+
+- **WHEN** release build on different UTC date
+- **THEN** counter resets to 1, new date recorded
 
 #### Scenario: Version injected into renderer bundle
 
-- **WHEN** the renderer bundle is compiled by esbuild
-- **THEN** the version string SHALL be available as a compile-time constant
-- **AND** no runtime file loading SHALL be required
+- **WHEN** bundle compiled
+- **THEN** CalVer available as compile-time constant, no runtime loading, dev=YY.MMDD.dev release=YY.MMDD.N
 
-#### Scenario: Local development build
+#### Scenario: AppImage filename matches in-app version
 
-- **WHEN** a developer runs `npm start` or `npm run build`
-- **THEN** the version SHALL reflect the current build time
-- **AND** the format SHALL be identical to CI builds
+- **WHEN** release build produces AppImage
+- **THEN** filename contains same CalVer as shown in app
+
+#### Scenario: GitHub Actions CI build uses CalVer
+
+- **WHEN** build triggered on GHA
+- **THEN** counter restored from Actions cache keyed by UTC date, bumped to YY.MMDD.N, saved back to cache, AppImage reflects CalVer
+
+#### Scenario: Multiple CI builds on same day
+
+- **WHEN** 2+ builds on same UTC date
+- **THEN** each gets unique incrementing N, counter shared via date-keyed Actions cache
