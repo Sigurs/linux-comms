@@ -13,6 +13,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
@@ -50,13 +52,7 @@ jobs:
       - name: Build
         run: npm run build:main && npm run build:renderer:prod && npm run build:picker:prod
 
-      - name: Build AppImage
-        run: npx electron-builder --linux AppImage
+      - name: Build and publish AppImage
+        run: npx electron-builder --linux AppImage --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload AppImage
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-comms-appimage
-          path: release/*.AppImage

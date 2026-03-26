@@ -85,6 +85,10 @@
         "--talk-name=org.freedesktop.Notifications"
       ]
     },
-    "asar": true
+    "asar": true,
+    "publish": {
+      "provider": "github",
+      "releaseType": "release"
+    }
   }
 }
