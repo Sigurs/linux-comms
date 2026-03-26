@@ -17,6 +17,12 @@ const INJECTION_SCRIPT = `
   MockNotif.requestPermission = function() { return Promise.resolve('granted'); };
   Object.defineProperty(window, 'Notification', { value: MockNotif, writable: true });
 
+  // ── window.open override for link choice dialog ──
+  window.open = function(url, target, features) {
+    lc.openLinkChoice(url || '');
+    return null;
+  };
+
   // ── getDisplayMedia override (X11 only) ──
   if (!lc.isWayland && navigator.mediaDevices) {
     const origGetDisplayMedia = navigator.mediaDevices.getDisplayMedia
@@ -66,7 +72,6 @@ export class WebviewManager {
     // Security settings
     wv.setAttribute('src', profile.url);
     wv.setAttribute('partition', profile.partition);
-    wv.setAttribute('allowpopups', '');
     wv.setAttribute(
       'preload',
       // The preload path is resolved relative to the app bundle
@@ -108,6 +113,11 @@ export class WebviewManager {
       const ev = e as Event & { channel: string; args: unknown[] };
       if (ev.channel === 'badge-update') {
         this.onBadgeChange(profile.id, (ev.args[0] as number) ?? 0);
+      } else if (ev.channel === 'link-open-request') {
+        const url = ev.args[0] as string;
+        if (url) {
+          window.electronAPI.openLinkChoice(url, profile.id);
+        }
       }
     });
 
@@ -187,6 +197,14 @@ export class WebviewManager {
   restorePopout(profileId: string): void {
     this.switchTo(profileId);
   }
+
+  reload(profileId: string): void {
+    const wv = this.webviews.get(profileId);
+    const profile = this.profiles.get(profileId);
+    if (wv && profile) {
+      wv.loadURL(profile.url);
+    }
+  }
 }
 
 function getPreloadPath(): string {
@@ -217,6 +235,7 @@ declare global {
       getPortalStatus: () => Promise<{ status: string; isWayland: boolean }>;
       showScreenSharePicker: () => Promise<string | null>;
       openPopout: (profileId: string) => void;
+      openLinkChoice: (url: string, profileId: string) => Promise<void>;
       onProfileUpdated: (
         cb: (data: { profiles: Profile[]; providers: unknown[] }) => void
       ) => () => void;

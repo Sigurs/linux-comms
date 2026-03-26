@@ -26,6 +26,9 @@ export const IPC = {
   POPOUT_OPEN: 'popout:open',
   POPOUT_CLOSED: 'popout:closed', // main → renderer
 
+  // Link opening
+  LINK_OPEN_PROMPT: 'link:open-prompt',
+
   // App info
   APP_GET_PLATFORM: 'app:get-platform',
   APP_IS_WAYLAND: 'app:is-wayland',

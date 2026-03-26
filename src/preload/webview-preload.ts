@@ -27,6 +27,11 @@ contextBridge.exposeInMainWorld('__linuxComms', {
   reportBadge: (count: number) => {
     ipcRenderer.sendToHost('badge-update', count);
   },
+
+  /** Notify host that a link wants to open */
+  openLinkChoice: (url: string): void => {
+    ipcRenderer.sendToHost('link-open-request', url);
+  },
 });
 
 // Grant Notification permission at the preload level

@@ -124,6 +124,7 @@ export class Sidebar {
 
     menu.innerHTML = `
       <button data-action="popout">Pop out</button>
+      <button data-action="reload">Reload</button>
       <button data-action="rename">Rename</button>
       <hr class="separator" />
       <button data-action="zoom-in" ${!canZoomIn ? 'disabled' : ''}>Zoom In</button>
@@ -145,6 +146,8 @@ export class Sidebar {
       restoreAndRemove();
       if (action === 'popout') {
         this.webviewManager.popOut(profile.id);
+      } else if (action === 'reload') {
+        this.webviewManager.reload(profile.id);
       } else if (action === 'rename') {
         const newName = await this.showRenameDialog(profile.name);
         if (newName) {

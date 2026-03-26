@@ -83,3 +83,34 @@ The sidebar SHALL display the application build version at the bottom in a muted
 - **WHEN** the sidebar is displayed with profiles and the add button
 - **THEN** the version text SHALL appear below all other sidebar elements
 - **AND** it SHALL NOT compete visually with profile entries or the add button
+
+### Requirement: Webview new-window events are intercepted
+
+The shell SHALL intercept new-window events from webviews and delegate to the link-open-choice capability instead of allowing default popup behavior.
+
+#### Scenario: External link triggers choice dialog
+
+- **WHEN** a webview fires a new-window event (user clicks external link)
+- **THEN** the shell SHALL prevent the default popup behavior
+- **AND** the shell SHALL invoke the link-open-choice dialog
+
+#### Scenario: New-window event includes URL
+
+- **WHEN** the shell intercepts a new-window event
+- **THEN** the URL from the event SHALL be passed to the link choice handler
+- **AND** the source profile ID SHALL be available for session context
+
+### Requirement: Profile context menu includes reload option
+
+The profile context menu SHALL provide a "Reload" option that refreshes the webview content.
+
+#### Scenario: User reloads a profile
+
+- **WHEN** the user right-clicks a profile and selects "Reload"
+- **THEN** the webview for that profile SHALL navigate to the profile's root URL (login page)
+
+#### Scenario: Reload inactive profile
+
+- **WHEN** the user reloads a profile that is not currently active
+- **THEN** the webview SHALL reload in the background
+- **AND** the currently active profile SHALL remain displayed
