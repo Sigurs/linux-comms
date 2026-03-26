@@ -162,3 +162,28 @@ The user SHALL be able to adjust the zoom level for the active profile using Ctr
 
 - **WHEN** the user Ctrl + scrolls over the sidebar (not the webview area)
 - **THEN** the zoom level SHALL NOT change
+
+### Requirement: Pop-out window title includes profile name
+
+A popped-out profile window's title SHALL always be formatted as `<page title> - <profile name>`, updated whenever the page changes its title.
+
+#### Scenario: Page sets its title after load
+
+- **WHEN** `page-title-updated` fires
+- **THEN** the window title SHALL be set to `<page title> - <profile name>`
+- **AND** Electron's default title update SHALL be suppressed
+
+#### Scenario: Page navigates and changes title
+
+- **WHEN** the page title changes on navigation
+- **THEN** the window title SHALL be updated to `<new page title> - <profile name>`
+
+### Requirement: Pop-out window hides menu bar
+
+A popped-out profile window SHALL auto-hide the native menu bar, consistent with the main shell window.
+
+#### Scenario: Pop-out window opened
+
+- **WHEN** a profile is popped out into a new window
+- **THEN** the menu bar SHALL be hidden by default
+- **AND** the user SHALL be able to reveal it by pressing Alt
