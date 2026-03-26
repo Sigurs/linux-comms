@@ -46,6 +46,11 @@ export function registerPopoutIpc(): void {
 
     win.loadURL(profile.url);
 
+    win.webContents.on('page-title-updated', (e, title) => {
+      e.preventDefault();
+      win.setTitle(`${title} - ${profile.name}`);
+    });
+
     win.on('closed', () => {
       popoutWindows.delete(profileId);
       // Notify shell renderer to re-embed the profile

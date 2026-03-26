@@ -163,11 +163,9 @@ function setupEventListeners() {
     document.getElementById('portal-warning')!.classList.add('hidden');
   });
 
-  // Pop-out restored
+  // Pop-out closed — re-embed without switching active profile
   window.electronAPI.onPopoutClosed((profileId) => {
-    webviewManager.restorePopout(profileId);
-    sidebar.setActive(profileId);
-    activeProfileId = profileId;
+    webviewManager.restorePopoutSilent(profileId);
   });
 }
 

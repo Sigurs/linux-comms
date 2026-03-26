@@ -198,6 +198,12 @@ export class WebviewManager {
     this.switchTo(profileId);
   }
 
+  restorePopoutSilent(_profileId: string): void {
+    // Re-embed the webview into the DOM without switching to it.
+    // The webview was only hidden (active class removed) when popped out,
+    // so no DOM re-attachment is needed — it remains ready for manual selection.
+  }
+
   reload(profileId: string): void {
     const wv = this.webviews.get(profileId);
     const profile = this.profiles.get(profileId);
