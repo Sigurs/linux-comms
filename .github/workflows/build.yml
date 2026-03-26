@@ -26,6 +26,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Bump version
+        run: node scripts/version.mjs --bump
+
       - name: Build
         run: npm run build && npm run build:picker
 
