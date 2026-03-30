@@ -25,13 +25,6 @@ chmod +x LinuxComms-*.AppImage
 ./LinuxComms-*.AppImage
 ```
 
-**Flatpak (recommended for screen sharing):**
-
-```bash
-flatpak install io.sigurs.LinuxComms
-flatpak run io.sigurs.LinuxComms
-```
-
 ## Building
 
 ```bash
