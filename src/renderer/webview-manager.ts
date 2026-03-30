@@ -28,8 +28,10 @@ const INJECTION_SCRIPT = `
   // RocketChat from accumulating unread counts in the title when not active.
   // We override the API and expose a setter so the renderer can flip it on profile switch.
   var _hidden = false;
-  Object.defineProperty(document, 'hidden', { get: function() { return _hidden; }, configurable: true });
-  Object.defineProperty(document, 'visibilityState', { get: function() { return _hidden ? 'hidden' : 'visible'; }, configurable: true });
+  try {
+    Object.defineProperty(document, 'hidden', { get: function() { return _hidden; }, configurable: true });
+    Object.defineProperty(document, 'visibilityState', { get: function() { return _hidden ? 'hidden' : 'visible'; }, configurable: true });
+  } catch(e) {}
   window.__linuxCommsSetHidden = function(hidden) {
     _hidden = !!hidden;
     document.dispatchEvent(new Event('visibilitychange'));
@@ -62,6 +64,7 @@ type WebviewEl = Electron.WebviewTag & { profileId?: string };
 export class WebviewManager {
   private webviews: Map<string, WebviewEl> = new Map();
   private profiles: Map<string, Profile> = new Map();
+  private readyWebviews: Set<string> = new Set();
   private activeProfileId: string | null = null;
   private container: HTMLElement;
   private onBadgeChange: (profileId: string, count: number) => void;
@@ -105,6 +108,9 @@ export class WebviewManager {
         `window.__linuxComms && (window.__linuxComms.__profileId = "${profile.id}");`
       ).catch(() => {});
       wv.executeJavaScript(INJECTION_SCRIPT).catch(() => {});
+
+      // Mark as ready so switchTo() knows it's safe to call executeJavaScript.
+      this.readyWebviews.add(profile.id);
 
       // If this webview is not the active one, mark it as hidden so web apps
       // (e.g. RocketChat) accumulate unread counts while the user is elsewhere.
@@ -161,7 +167,9 @@ export class WebviewManager {
       const prev = this.webviews.get(this.activeProfileId);
       if (prev) {
         prev.classList.remove('active');
-        prev.executeJavaScript('window.__linuxCommsSetHidden && window.__linuxCommsSetHidden(true)').catch(() => {});
+        if (this.readyWebviews.has(this.activeProfileId)) {
+          prev.executeJavaScript('window.__linuxCommsSetHidden && window.__linuxCommsSetHidden(true)').catch(() => {});
+        }
       }
     }
 
@@ -169,7 +177,9 @@ export class WebviewManager {
     const next = this.webviews.get(profileId);
     if (next) {
       next.classList.add('active');
-      next.executeJavaScript('window.__linuxCommsSetHidden && window.__linuxCommsSetHidden(false)').catch(() => {});
+      if (this.readyWebviews.has(profileId)) {
+        next.executeJavaScript('window.__linuxCommsSetHidden && window.__linuxCommsSetHidden(false)').catch(() => {});
+      }
       const profile = this.profiles.get(profileId);
       if (profile) {
         try {
@@ -206,6 +216,7 @@ export class WebviewManager {
     if (!wv) return;
     wv.remove();
     this.webviews.delete(profileId);
+    this.readyWebviews.delete(profileId);
     if (this.activeProfileId === profileId) {
       this.activeProfileId = null;
     }
@@ -217,7 +228,9 @@ export class WebviewManager {
     const wv = this.webviews.get(profileId);
     if (wv) {
       wv.classList.remove('active');
-      wv.executeJavaScript('window.__linuxCommsSetHidden && window.__linuxCommsSetHidden(true)').catch(() => {});
+      if (this.readyWebviews.has(profileId)) {
+        wv.executeJavaScript('window.__linuxCommsSetHidden && window.__linuxCommsSetHidden(true)').catch(() => {});
+      }
     }
     if (this.activeProfileId === profileId) {
       this.activeProfileId = null;

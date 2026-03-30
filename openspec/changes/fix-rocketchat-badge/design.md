@@ -42,6 +42,12 @@ Toggle points in `WebviewManager`:
 
 Could listen for a `set-visibility` IPC message in the webview preload and use `ipcRenderer.on` to update state. Rejected — requires preload changes and an additional IPC round-trip. The `executeJavaScript` approach achieves the same result with less complexity.
 
+## Readiness Guard
+
+`executeJavaScript` must not be called on a webview before its content has loaded (`dom-ready`). On startup, `initWebviews()` calls `switchTo(firstId)` before any webview has fired `dom-ready`, which would cause Electron to log `Error occurred in handler for 'GUEST_VIEW_MANAGER_CALL'` for every profile.
+
+A `readyWebviews: Set<string>` tracks which profiles have completed `dom-ready`. The `switchTo()` and `popOut()` visibility calls are gated on this set. The `dom-ready` handler's own visibility call is safe (it fires from within `dom-ready`). `removeWebview()` cleans up the set entry.
+
 ## Risks / Trade-offs
 
 - **Redefining `document.visibilityState` on a live document**: `Object.defineProperty` with `configurable: true` is safe and widely used. Web apps that snapshot the value at startup instead of reading it dynamically won't respond — but those apps wouldn't respond to `visibilitychange` either, so this is an inherent limitation of the approach rather than a regression.
