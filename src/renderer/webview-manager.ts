@@ -23,6 +23,18 @@ const INJECTION_SCRIPT = `
     return null;
   };
 
+  // ── Page Visibility API override ──
+  // Webviews always report 'visible' by default, which prevents web apps like
+  // RocketChat from accumulating unread counts in the title when not active.
+  // We override the API and expose a setter so the renderer can flip it on profile switch.
+  var _hidden = false;
+  Object.defineProperty(document, 'hidden', { get: function() { return _hidden; }, configurable: true });
+  Object.defineProperty(document, 'visibilityState', { get: function() { return _hidden ? 'hidden' : 'visible'; }, configurable: true });
+  window.__linuxCommsSetHidden = function(hidden) {
+    _hidden = !!hidden;
+    document.dispatchEvent(new Event('visibilitychange'));
+  };
+
   // ── getDisplayMedia override (X11 only) ──
   if (!lc.isWayland && navigator.mediaDevices) {
     const origGetDisplayMedia = navigator.mediaDevices.getDisplayMedia
@@ -94,6 +106,12 @@ export class WebviewManager {
       ).catch(() => {});
       wv.executeJavaScript(INJECTION_SCRIPT).catch(() => {});
 
+      // If this webview is not the active one, mark it as hidden so web apps
+      // (e.g. RocketChat) accumulate unread counts while the user is elsewhere.
+      if (this.activeProfileId !== profile.id) {
+        wv.executeJavaScript('window.__linuxCommsSetHidden && window.__linuxCommsSetHidden(true)').catch(() => {});
+      }
+
       // Apply profile's zoom level
       if (this.activeProfileId === profile.id) {
         wv.setZoomLevel(profile.zoomLevel ?? 0);
@@ -143,6 +161,7 @@ export class WebviewManager {
       const prev = this.webviews.get(this.activeProfileId);
       if (prev) {
         prev.classList.remove('active');
+        prev.executeJavaScript('window.__linuxCommsSetHidden && window.__linuxCommsSetHidden(true)').catch(() => {});
       }
     }
 
@@ -150,6 +169,7 @@ export class WebviewManager {
     const next = this.webviews.get(profileId);
     if (next) {
       next.classList.add('active');
+      next.executeJavaScript('window.__linuxCommsSetHidden && window.__linuxCommsSetHidden(false)').catch(() => {});
       const profile = this.profiles.get(profileId);
       if (profile) {
         try {
@@ -197,6 +217,7 @@ export class WebviewManager {
     const wv = this.webviews.get(profileId);
     if (wv) {
       wv.classList.remove('active');
+      wv.executeJavaScript('window.__linuxCommsSetHidden && window.__linuxCommsSetHidden(true)').catch(() => {});
     }
     if (this.activeProfileId === profileId) {
       this.activeProfileId = null;
