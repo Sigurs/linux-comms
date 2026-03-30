@@ -11,7 +11,7 @@ export function isWayland(): boolean {
 export function applyPlatformFlags(): void {
   if (isWayland()) {
     app.commandLine.appendSwitch('ozone-platform', 'wayland');
-    app.commandLine.appendSwitch('enable-features', 'WaylandWindowDecorations,UseOzonePlatform');
+    app.commandLine.appendSwitch('enable-features', 'WaylandWindowDecorations,UseOzonePlatform,WebRTCPipeWireCapturer');
     app.commandLine.appendSwitch('enable-wayland-ime');
     console.log('[platform] Running with Wayland backend');
   } else {
