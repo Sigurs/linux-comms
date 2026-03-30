@@ -121,6 +121,15 @@ export class WebviewManager {
       }
     });
 
+    // Handle anchor-based new-window requests (e.g. <a target="_blank">).
+    // These bypass the window.open() JS override and fire as native webview events.
+    wv.addEventListener('new-window', (e) => {
+      const ev = e as Event & { url: string };
+      if (ev.url) {
+        window.electronAPI.openLinkChoice(ev.url, profile.id);
+      }
+    });
+
     this.container.appendChild(wv);
     this.webviews.set(profile.id, wv);
     return wv;
