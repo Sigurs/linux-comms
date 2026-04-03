@@ -84,7 +84,7 @@ export function applySessionPermissions(
   // WebRTCPipeWireCapturer feature can route them to xdg-desktop-portal.
   if (isWayland()) {
     sess.setDisplayMediaRequestHandler((_request, callback) => {
-      callback({ video: 'loopback', audio: 'loopback' });
-    });
+      callback({ audio: 'loopback' });
+    }, { useSystemPicker: true });
   }
 }
