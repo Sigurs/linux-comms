@@ -9,8 +9,13 @@ const INJECTION_SCRIPT = `
 
   // ── Notification override ──
   const OrigNotif = window.Notification;
+  var _notifCount = 0;
   const MockNotif = function(title, options) {
     lc.sendNotification(lc.__profileId || '', title, options && options.body ? options.body : '');
+    if (_hidden) {
+      _notifCount++;
+      lc.reportBadge(_notifCount);
+    }
     try { return new OrigNotif(title, options); } catch(e) { return {}; }
   };
   MockNotif.permission = 'granted';
@@ -26,15 +31,34 @@ const INJECTION_SCRIPT = `
   // ── Page Visibility API override ──
   // Webviews always report 'visible' by default, which prevents web apps like
   // RocketChat from accumulating unread counts in the title when not active.
-  // We override the API and expose a setter so the renderer can flip it on profile switch.
+  // We override via the prototype chain (not the instance) because document.hidden
+  // and document.visibilityState are defined on Document.prototype in Chromium, where
+  // they are configurable — instance-level Object.defineProperty may fail silently.
   var _hidden = false;
-  try {
-    Object.defineProperty(document, 'hidden', { get: function() { return _hidden; }, configurable: true });
-    Object.defineProperty(document, 'visibilityState', { get: function() { return _hidden ? 'hidden' : 'visible'; }, configurable: true });
-  } catch(e) {}
+  function _overrideDocProp(name, getFn) {
+    var proto = document;
+    while (proto && !Object.getOwnPropertyDescriptor(proto, name)) {
+      proto = Object.getPrototypeOf(proto);
+    }
+    if (proto) {
+      try { Object.defineProperty(proto, name, { get: getFn, configurable: true }); } catch(e) {}
+    }
+  }
+  _overrideDocProp('hidden', function() { return _hidden; });
+  _overrideDocProp('visibilityState', function() { return _hidden ? 'hidden' : 'visible'; });
+  // Also override hasFocus() so apps that gate unread accumulation on focus agree with
+  // the visibility state we report.
+  var _origHasFocus = document.hasFocus.bind(document);
+  document.hasFocus = function() { return _hidden ? false : _origHasFocus(); };
   window.__linuxCommsSetHidden = function(hidden) {
+    var wasHidden = _hidden;
     _hidden = !!hidden;
-    document.dispatchEvent(new Event('visibilitychange'));
+    if (wasHidden && !_hidden) {
+      // Becoming active: clear notification-based badge counter.
+      _notifCount = 0;
+      lc.reportBadge(0);
+    }
+    document.dispatchEvent(new Event('visibilitychange', { bubbles: false }));
   };
 
   // ── getDisplayMedia override (X11 only) ──
