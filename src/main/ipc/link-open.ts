@@ -23,7 +23,7 @@ export function registerLinkOpenIpc(): void {
       type: 'question',
       title: 'Open Link',
       message: `How would you like to open this link?`,
-      detail: truncatedUrl !== url ? `${truncatedUrl}\n\n${url}` : url,
+      detail: truncatedUrl,
       buttons: ['Open in Browser', 'Open in Popup', 'Cancel'],
       defaultId: 0,
       cancelId: 2,
