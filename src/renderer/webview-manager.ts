@@ -154,6 +154,24 @@ export class WebviewManager {
       }
     });
 
+    // Handle plain <a href> clicks and right-click → "Open Link" context menu actions.
+    // These fire will-navigate instead of new-window. Intercept external URLs only —
+    // same-origin navigations (SPA room switching) pass through unchanged.
+    wv.addEventListener('will-navigate', (e) => {
+      const ev = e as Event & { url: string };
+      if (!ev.url) return;
+      try {
+        const destOrigin = new URL(ev.url).origin;
+        const profileOrigin = new URL(profile.url).origin;
+        if (destOrigin !== profileOrigin) {
+          e.preventDefault();
+          window.electronAPI.openLinkChoice(ev.url, profile.id);
+        }
+      } catch {
+        // Malformed URL — let the webview handle it
+      }
+    });
+
     this.container.appendChild(wv);
     this.webviews.set(profile.id, wv);
     return wv;
