@@ -14,4 +14,10 @@ export const teamsProvider: CommunicationProvider = {
     allowedPermissions: ['media', 'display-capture', 'notifications', 'microphone', 'camera'],
   },
   configFields: [],
+  // Domains used during Teams auth/startup that should not trigger the link-open dialog.
+  // Deliberately narrow: *.cloud.microsoft covers the loginHint redirect on startup;
+  // *.microsoftonline.com covers Azure AD OAuth flows.
+  // *.microsoft.com is intentionally excluded — it's too broad and would suppress dialogs
+  // for docs, support pages, and other external Microsoft content links.
+  trustedDomains: ['*.cloud.microsoft', '*.microsoftonline.com'],
 };

@@ -17,6 +17,9 @@ export interface CommunicationProvider {
   webviewOptions: WebviewOptions;
   /** Provider-specific config fields shown when adding a new profile */
   configFields?: ProviderConfigField[];
+  /** Domain patterns (supports leading wildcard, e.g. "*.microsoft.com") that are treated as
+   *  internal navigation — will-navigate to these domains bypasses the link-open-choice dialog */
+  trustedDomains?: string[];
 }
 
 export interface ProviderConfigField {

@@ -1,4 +1,5 @@
 import type { Profile } from '../shared/types';
+import { getProvider } from '../providers';
 
 /** Injected into each webview after dom-ready to bridge Notifications and screen sharing */
 const INJECTION_SCRIPT = `
@@ -82,6 +83,22 @@ const INJECTION_SCRIPT = `
   }
 })();
 `;
+
+function matchesTrustedDomain(url: string, trustedDomains: string[]): boolean {
+  let hostname: string;
+  try {
+    hostname = new URL(url).hostname;
+  } catch {
+    return false;
+  }
+  return trustedDomains.some((pattern) => {
+    if (pattern.startsWith('*.')) {
+      const suffix = pattern.slice(1); // e.g. ".microsoft.com"
+      return hostname === pattern.slice(2) || hostname.endsWith(suffix);
+    }
+    return hostname === pattern;
+  });
+}
 
 type WebviewEl = Electron.WebviewTag & { profileId?: string };
 
@@ -180,7 +197,7 @@ export class WebviewManager {
 
     // Handle plain <a href> clicks and right-click → "Open Link" context menu actions.
     // These fire will-navigate instead of new-window. Intercept external URLs only —
-    // same-origin navigations (SPA room switching) pass through unchanged.
+    // same-origin navigations (SPA room switching) and provider-trusted domains pass through.
     wv.addEventListener('will-navigate', (e) => {
       const ev = e as Event & { url: string };
       if (!ev.url) return;
@@ -188,6 +205,10 @@ export class WebviewManager {
         const destOrigin = new URL(ev.url).origin;
         const profileOrigin = new URL(profile.url).origin;
         if (destOrigin !== profileOrigin) {
+          const provider = getProvider(profile.providerId);
+          if (provider?.trustedDomains && matchesTrustedDomain(ev.url, provider.trustedDomains)) {
+            return; // Internal auth/redirect navigation — let it proceed silently
+          }
           e.preventDefault();
           window.electronAPI.openLinkChoice(ev.url, profile.id);
         }
