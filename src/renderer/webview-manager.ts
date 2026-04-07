@@ -25,9 +25,26 @@ const INJECTION_SCRIPT = `
 
   // ── window.open override for link choice dialog ──
   window.open = function(url, target, features) {
+    console.log('[link] window.open intercepted:', url, 'target:', target);
     lc.openLinkChoice(url || '');
     return null;
   };
+
+  // ── Anchor click interceptor for <a target="_blank"> links ──
+  // Catches links that don't go through window.open() (e.g. RocketChat's
+  // <a href="..." target="_blank" rel="noopener noreferrer"> message links),
+  // which are not reliably caught by the webview new-window event in Electron 41.
+  document.addEventListener('click', function(e) {
+    var anchor = e.target && e.target.closest ? e.target.closest('a') : null;
+    if (!anchor || !anchor.href || anchor.target !== '_blank') return;
+    try {
+      var destOrigin = new URL(anchor.href).origin;
+      if (destOrigin === location.origin) return; // same-origin — let browser handle it
+    } catch(err) { return; }
+    console.log('[link] anchor click intercepted:', anchor.href);
+    e.preventDefault();
+    lc.openLinkChoice(anchor.href);
+  }, true); // capture phase so we run before any SPA click handlers
 
   // ── Page Visibility API override ──
   // Webviews always report 'visible' by default, which prevents web apps like
@@ -180,6 +197,7 @@ export class WebviewManager {
         this.onBadgeChange(profile.id, (ev.args[0] as number) ?? 0);
       } else if (ev.channel === 'link-open-request') {
         const url = ev.args[0] as string;
+        console.log('[link] ipc-message link-open-request:', url, 'profile:', profile.id);
         if (url) {
           window.electronAPI.openLinkChoice(url, profile.id);
         }
@@ -190,6 +208,7 @@ export class WebviewManager {
     // These bypass the window.open() JS override and fire as native webview events.
     wv.addEventListener('new-window', (e) => {
       const ev = e as Event & { url: string };
+      console.log('[link] new-window event:', ev.url, 'profile:', profile.id);
       if (ev.url) {
         window.electronAPI.openLinkChoice(ev.url, profile.id);
       }
@@ -201,14 +220,17 @@ export class WebviewManager {
     wv.addEventListener('will-navigate', (e) => {
       const ev = e as Event & { url: string };
       if (!ev.url) return;
+      console.log('[link] will-navigate:', ev.url, 'profile:', profile.id);
       try {
         const destOrigin = new URL(ev.url).origin;
         const profileOrigin = new URL(profile.url).origin;
         if (destOrigin !== profileOrigin) {
           const provider = getProvider(profile.providerId);
           if (provider?.trustedDomains && matchesTrustedDomain(ev.url, provider.trustedDomains)) {
+            console.log('[link] will-navigate: trusted domain, allowing through:', ev.url);
             return; // Internal auth/redirect navigation — let it proceed silently
           }
+          console.log('[link] will-navigate: external URL, showing dialog:', ev.url);
           e.preventDefault();
           window.electronAPI.openLinkChoice(ev.url, profile.id);
         }
