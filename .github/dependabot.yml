@@ -12,3 +12,10 @@ updates:
     labels:
       - 'dependencies'
       - 'automated'
+    groups:
+      npm-dev-dependencies:
+        patterns:
+          - '*'
+        update-types:
+          - 'minor'
+          - 'patch'
