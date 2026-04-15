@@ -40,7 +40,10 @@ const INJECTION_SCRIPT = `
     try {
       var destOrigin = new URL(anchor.href).origin;
       if (destOrigin === location.origin) return; // same-origin — let browser handle it
-    } catch(err) { return; }
+    } catch(err) {
+      console.log('[link] anchor click error - malformed URL:', anchor.href, 'Error:', err.message);
+      return; // Let browser handle malformed URLs
+    }
     console.log('[link] anchor click intercepted:', anchor.href);
     e.preventDefault();
     lc.openLinkChoice(anchor.href);
@@ -105,7 +108,13 @@ function matchesTrustedDomain(url: string, trustedDomains: string[]): boolean {
   let hostname: string;
   try {
     hostname = new URL(url).hostname;
-  } catch {
+  } catch (err) {
+    console.log(
+      '[link] matchesTrustedDomain error - malformed URL:',
+      url,
+      'Error:',
+      err instanceof Error ? err.message : String(err)
+    );
     return false;
   }
   return trustedDomains.some((pattern) => {
@@ -173,7 +182,9 @@ export class WebviewManager {
       // If this webview is not the active one, mark it as hidden so web apps
       // (e.g. RocketChat) accumulate unread counts while the user is elsewhere.
       if (this.activeProfileId !== profile.id) {
-        wv.executeJavaScript('window.__linuxCommsSetHidden && window.__linuxCommsSetHidden(true)').catch(() => {});
+        wv.executeJavaScript(
+          'window.__linuxCommsSetHidden && window.__linuxCommsSetHidden(true)'
+        ).catch(() => {});
       }
 
       // Apply profile's zoom level
@@ -234,7 +245,13 @@ export class WebviewManager {
           e.preventDefault();
           window.electronAPI.openLinkChoice(ev.url, profile.id);
         }
-      } catch {
+      } catch (err) {
+        console.log(
+          '[link] will-navigate error - malformed URL:',
+          ev.url,
+          'Error:',
+          err instanceof Error ? err.message : String(err)
+        );
         // Malformed URL — let the webview handle it
       }
     });
@@ -253,7 +270,9 @@ export class WebviewManager {
       if (prev) {
         prev.classList.remove('active');
         if (this.readyWebviews.has(this.activeProfileId)) {
-          prev.executeJavaScript('window.__linuxCommsSetHidden && window.__linuxCommsSetHidden(true)').catch(() => {});
+          prev
+            .executeJavaScript('window.__linuxCommsSetHidden && window.__linuxCommsSetHidden(true)')
+            .catch(() => {});
         }
       }
     }
@@ -263,7 +282,9 @@ export class WebviewManager {
     if (next) {
       next.classList.add('active');
       if (this.readyWebviews.has(profileId)) {
-        next.executeJavaScript('window.__linuxCommsSetHidden && window.__linuxCommsSetHidden(false)').catch(() => {});
+        next
+          .executeJavaScript('window.__linuxCommsSetHidden && window.__linuxCommsSetHidden(false)')
+          .catch(() => {});
       }
       const profile = this.profiles.get(profileId);
       if (profile) {
@@ -314,7 +335,9 @@ export class WebviewManager {
     if (wv) {
       wv.classList.remove('active');
       if (this.readyWebviews.has(profileId)) {
-        wv.executeJavaScript('window.__linuxCommsSetHidden && window.__linuxCommsSetHidden(true)').catch(() => {});
+        wv.executeJavaScript(
+          'window.__linuxCommsSetHidden && window.__linuxCommsSetHidden(true)'
+        ).catch(() => {});
       }
     }
     if (this.activeProfileId === profileId) {

@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow } from 'electron';
+import { ipcMain, BrowserWindow, shell } from 'electron';
 import { join } from 'path';
 import { IPC } from '../../shared/ipc-channels';
 import { getAllProfiles } from '../store/profile-store';
@@ -39,10 +39,7 @@ export function registerPopoutIpc(): void {
     const provider = getProvider(profile.providerId);
     if (!provider) return;
 
-    applySessionPermissions(
-      profile.partition,
-      provider.webviewOptions.allowedPermissions ?? []
-    );
+    applySessionPermissions(profile.partition, provider.webviewOptions.allowedPermissions ?? []);
 
     const win = new BrowserWindow({
       width: 1200,
@@ -71,7 +68,18 @@ export function registerPopoutIpc(): void {
 
     // Intercept window.open() and target="_blank" link clicks
     win.webContents.setWindowOpenHandler(({ url }) => {
-      void showLinkOpenDialog(url, profileId, win);
+      try {
+        void showLinkOpenDialog(url, profileId, win);
+      } catch (err) {
+        console.log(
+          '[link] popout window.open handler error:',
+          url,
+          'Error:',
+          err instanceof Error ? err.message : String(err)
+        );
+        // Fall back to browser handling if dialog fails
+        void shell.openExternal(url);
+      }
       return { action: 'deny' };
     });
 
@@ -80,7 +88,13 @@ export function registerPopoutIpc(): void {
       try {
         if (new URL(url).origin === new URL(profile.url).origin) return;
         if (provider.trustedDomains && matchesTrustedDomain(url, provider.trustedDomains)) return;
-      } catch {
+      } catch (err) {
+        console.log(
+          '[link] popout will-navigate error - malformed URL:',
+          url,
+          'Error:',
+          err instanceof Error ? err.message : String(err)
+        );
         return;
       }
       event.preventDefault();

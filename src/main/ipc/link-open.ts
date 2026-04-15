@@ -18,84 +18,133 @@ export async function showLinkOpenDialog(
   parentWin: BrowserWindow | null
 ): Promise<void> {
   if (dialogOpen) return;
-  console.log('[link-open] URL:', url, 'ProfileId:', profileId);
-  const profiles = getAllProfiles();
-  const profile = profiles.find((p) => p.id === profileId);
-  console.log('[link-open] Profile found:', profile?.name, 'Partition:', profile?.partition);
 
-  const truncatedUrl = truncateUrl(url, 60);
-
-  const dialogOptions = {
-    type: 'question' as const,
-    title: 'Open Link',
-    message: `How would you like to open this link?`,
-    detail: truncatedUrl,
-    buttons: ['Open in Browser', 'Open in Popup', 'Cancel'],
-    defaultId: 0,
-    cancelId: 2,
-  };
-
-  dialogOpen = true;
-  let result: Electron.MessageBoxReturnValue;
   try {
-    result = parentWin
-      ? await dialog.showMessageBox(parentWin, dialogOptions)
-      : await dialog.showMessageBox(dialogOptions);
-  } finally {
-    dialogOpen = false;
-  }
+    console.log('[link-open] URL:', url, 'ProfileId:', profileId);
 
-  console.log('[link-open] User choice:', result.response);
+    // Validate URL early to fail fast with malformed URLs
+    try {
+      new URL(url);
+    } catch (urlErr) {
+      console.log(
+        '[link-open] Invalid URL format:',
+        url,
+        'Error:',
+        urlErr instanceof Error ? urlErr.message : String(urlErr)
+      );
+      // Show error to user instead of crashing
+      const errorDialogOptions = {
+        type: 'error' as const,
+        title: 'Invalid Link',
+        message: 'Cannot open this link',
+        detail: `The URL "${truncateUrl(url, 100)}" is not valid.`,
+        buttons: ['OK'],
+      };
+      if (parentWin) {
+        await dialog.showMessageBox(parentWin, errorDialogOptions);
+      } else {
+        await dialog.showMessageBox(errorDialogOptions);
+      }
+      return;
+    }
 
-  if (result.response === 2) {
-    return;
-  }
+    const profiles = getAllProfiles();
+    const profile = profiles.find((p) => p.id === profileId);
 
-  if (result.response === 0) {
-    console.log('[link-open] Opening in browser');
-    await shell.openExternal(url);
-    return;
-  }
-
-  if (result.response === 1) {
-    console.log('[link-open] Opening in popup');
     if (!profile) {
-      console.log('[link-open] No profile, falling back to browser');
+      console.log('[link-open] Profile not found for ID:', profileId);
+      // Fall back to opening in browser if profile is missing
       await shell.openExternal(url);
       return;
     }
 
-    const provider = getProvider(profile.providerId);
-    if (provider) {
-      applySessionPermissions(
-        profile.partition,
-        provider.webviewOptions.allowedPermissions ?? []
-      );
+    console.log('[link-open] Profile found:', profile?.name, 'Partition:', profile?.partition);
+
+    const truncatedUrl = truncateUrl(url, 60);
+
+    const dialogOptions = {
+      type: 'question' as const,
+      title: 'Open Link',
+      message: `How would you like to open this link?`,
+      detail: truncatedUrl,
+      buttons: ['Open in Browser', 'Open in Popup', 'Cancel'],
+      defaultId: 0,
+      cancelId: 2,
+    };
+
+    dialogOpen = true;
+    let result: any;
+    try {
+      result = parentWin
+        ? await dialog.showMessageBox(parentWin, dialogOptions)
+        : await dialog.showMessageBox(dialogOptions);
+    } finally {
+      dialogOpen = false;
     }
 
-    console.log('[link-open] Creating BrowserWindow with partition:', profile.partition);
-    const win = new BrowserWindow({
-      width: 1200,
-      height: 800,
-      title: `Loading... — ${profile.name}`,
-      webPreferences: {
-        contextIsolation: true,
-        nodeIntegration: false,
-        partition: profile.partition,
-        preload: join(__dirname, '../../preload/webview-preload.js'),
-      },
-    });
+    console.log('[link-open] User choice:', result.response);
 
-    if (provider?.webviewOptions.userAgent) {
-      win.webContents.setUserAgent(provider.webviewOptions.userAgent);
+    if (result.response === 2) {
+      return;
     }
 
-    win.webContents.on('page-title-updated', (_event, title) => {
-      win.setTitle(`${title} — ${profile.name}`);
-    });
+    if (result.response === 0) {
+      console.log('[link-open] Opening in browser');
+      await shell.openExternal(url);
+      return;
+    }
 
-    win.loadURL(url);
-    console.log('[link-open] Popup window created');
+    if (result.response === 1) {
+      console.log('[link-open] Opening in popup');
+
+      const provider = getProvider(profile.providerId);
+      if (provider) {
+        applySessionPermissions(
+          profile.partition,
+          provider.webviewOptions.allowedPermissions ?? []
+        );
+      }
+
+      console.log('[link-open] Creating BrowserWindow with partition:', profile.partition);
+      const win = new BrowserWindow({
+        width: 1200,
+        height: 800,
+        title: `Loading... — ${profile.name}`,
+        webPreferences: {
+          contextIsolation: true,
+          nodeIntegration: false,
+          partition: profile.partition,
+          preload: join(__dirname, '../../preload/webview-preload.js'),
+        },
+      });
+
+      if (provider?.webviewOptions.userAgent) {
+        win.webContents.setUserAgent(provider.webviewOptions.userAgent);
+      }
+
+      win.webContents.on('page-title-updated', (_event, title) => {
+        win.setTitle(`${title} — ${profile.name}`);
+      });
+
+      win.loadURL(url);
+      console.log('[link-open] Popup window created');
+    }
+  } catch (err) {
+    console.log('[link-open] Unexpected error:', err instanceof Error ? err.message : String(err));
+    dialogOpen = false; // Ensure dialog state is reset
+    // Show generic error to user
+    const errorDialogOptions = {
+      type: 'error' as const,
+      title: 'Error Opening Link',
+      message: 'An unexpected error occurred',
+      detail: 'The link could not be opened due to an internal error.',
+      buttons: ['OK'],
+    };
+    if (parentWin) {
+      await dialog.showMessageBox(parentWin, errorDialogOptions);
+    } else {
+      await dialog.showMessageBox(errorDialogOptions);
+    }
   }
 }
 
