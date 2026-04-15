@@ -1,19 +1,12 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "module": "CommonJS",
-    "moduleResolution": "node",
+    "module": "Node16",
+    "moduleResolution": "node16",
     "outDir": "./dist",
     "rootDir": "./src",
     "lib": ["ES2022"]
   },
-  "include": [
-    "src/main/**/*",
-    "src/preload/**/*",
-    "src/providers/**/*",
-    "src/shared/**/*"
-  ],
-  "exclude": [
-    "src/renderer/**/*"
-  ]
+  "include": ["src/main/**/*", "src/preload/**/*", "src/providers/**/*", "src/shared/**/*"],
+  "exclude": ["src/renderer/**/*"]
 }
