@@ -54,38 +54,7 @@ When a link is clicked that would navigate outside the current webview origin, t
 - **AND** the URL SHALL NOT be opened anywhere
 
 #### Scenario: Trusted domain navigation bypasses dialog
+
 - **WHEN** a `will-navigate` event fires for a URL matching the provider's `trustedDomains`
 - **THEN** the navigation SHALL proceed without showing the dialog
 - **AND** no user interaction SHALL be required
-
-### Requirement: Popup window uses profile session
-
-Popup windows opened via the link choice dialog SHALL maintain the same session context as the originating webview.
-
-#### Scenario: OAuth flow works in popup
-
-- **WHEN** a user clicks an OAuth link and chooses "Open in Popup"
-- **THEN** the OAuth provider SHALL recognize the user's existing session
-- **AND** the authentication flow SHALL complete successfully
-
-#### Scenario: Session isolation between profiles
-
-- **WHEN** a popup is opened from Profile A's webview
-- **THEN** the popup SHALL NOT have access to Profile B's cookies or session data
-- **AND** the popup SHALL only have access to Profile A's session
-
-### Requirement: Dialog is non-blocking and informative
-
-The link choice dialog SHALL provide clear information without disrupting the user's workflow unnecessarily.
-
-#### Scenario: Dialog shows truncated URL for long URLs
-
-- **WHEN** the URL to be opened is longer than 60 characters
-- **THEN** the dialog SHALL display only the truncated version (with ellipsis) in the detail field
-- **AND** the full URL SHALL NOT be included in the dialog detail text to prevent surface allocation crashes on Wayland
-
-#### Scenario: Dialog has sensible default focus
-
-- **WHEN** the dialog appears
-- **THEN** the "Open in Browser" button SHALL have default focus
-- **AND** the dialog SHALL be dismissible with the Escape key

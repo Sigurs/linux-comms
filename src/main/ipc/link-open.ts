@@ -10,8 +10,11 @@ function truncateUrl(url: string, maxLength: number = 60): string {
   return url.substring(0, maxLength - 3) + '...';
 }
 
+let dialogOpen = false;
+
 export function registerLinkOpenIpc(): void {
   ipcMain.handle(IPC.LINK_OPEN_PROMPT, async (_event, url: string, profileId: string) => {
+    if (dialogOpen) return;
     console.log('[link-open] URL:', url, 'ProfileId:', profileId);
     const profiles = getAllProfiles();
     const profile = profiles.find((p) => p.id === profileId);
@@ -19,15 +22,21 @@ export function registerLinkOpenIpc(): void {
 
     const truncatedUrl = truncateUrl(url, 60);
 
-    const result = await dialog.showMessageBox({
-      type: 'question',
-      title: 'Open Link',
-      message: `How would you like to open this link?`,
-      detail: truncatedUrl,
-      buttons: ['Open in Browser', 'Open in Popup', 'Cancel'],
-      defaultId: 0,
-      cancelId: 2,
-    });
+    dialogOpen = true;
+    let result: Electron.MessageBoxReturnValue;
+    try {
+      result = await dialog.showMessageBox({
+        type: 'question',
+        title: 'Open Link',
+        message: `How would you like to open this link?`,
+        detail: truncatedUrl,
+        buttons: ['Open in Browser', 'Open in Popup', 'Cancel'],
+        defaultId: 0,
+        cancelId: 2,
+      });
+    } finally {
+      dialogOpen = false;
+    }
 
     console.log('[link-open] User choice:', result.response);
 
