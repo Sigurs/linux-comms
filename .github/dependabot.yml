@@ -6,12 +6,9 @@ updates:
       interval: 'daily'
     open-pull-requests-limit: 10
     reviewers:
-      - 'sigurs'
+      - 'Sigurs'
     assignees:
-      - 'sigurs'
-    labels:
-      - 'dependencies'
-      - 'automated'
+      - 'Sigurs'
     groups:
       npm-dev-dependencies:
         patterns:
