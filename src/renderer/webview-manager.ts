@@ -1,5 +1,61 @@
-import type { Profile } from '../shared/types';
+import type { Profile, ProfileIcon } from '../shared/types';
 import { getProvider } from '../providers';
+
+/**
+ * Injected into Teams webviews post-login to find the organisation logo.
+ * Uses MutationObserver with a priority-ordered selector list; calls
+ * window.__linuxComms.reportOrgLogo() on first match, then stops.
+ * Self-terminates after 10 s if nothing is found.
+ */
+const TEAMS_LOGO_OBSERVER_SCRIPT = `
+(function() {
+  if (window.__linuxCommsLogoInjected) return;
+  window.__linuxCommsLogoInjected = true;
+
+  const SELECTORS = [
+    // Teams web specific — org avatar in header
+    '[data-testid="orgAvatar"] img',
+    '[data-testid="org-avatar"] img',
+    '[class*="orgAvatar"] img',
+    '[class*="org-avatar"] img',
+    // Broader: any img inside the top app bar or header with a tenant/org hint
+    'header [aria-label*="organization"] img',
+    'header [aria-label*="company"] img',
+    'header [title*="organization"] img',
+    'header [title*="company"] img',
+    // Generic header image fallback (first img in header that isn't a user avatar)
+    'header img[src*="tenant"]',
+    'header img[src*="organization"]',
+    'header img[src*="logo"]',
+  ];
+
+  function tryFind() {
+    for (const sel of SELECTORS) {
+      try {
+        const el = document.querySelector(sel);
+        if (el && el.src) {
+          const url = new URL(el.src, location.origin).href;
+          if (window.__linuxComms && window.__linuxComms.reportOrgLogo) {
+            window.__linuxComms.reportOrgLogo(url);
+          }
+          return true;
+        }
+      } catch(e) {}
+    }
+    return false;
+  }
+
+  if (tryFind()) return;
+
+  const observer = new MutationObserver(() => {
+    if (tryFind()) observer.disconnect();
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  // Self-terminate after 10 s
+  setTimeout(() => observer.disconnect(), 10000);
+})();
+`;
 
 /** Injected into each webview after dom-ready to bridge Notifications and screen sharing */
 const INJECTION_SCRIPT = `
@@ -126,7 +182,7 @@ function matchesTrustedDomain(url: string, trustedDomains: string[]): boolean {
   });
 }
 
-type WebviewEl = Electron.WebviewTag & { profileId?: string };
+type WebviewEl = Electron.WebviewTag & { profileId?: string; logoObserverInjected?: boolean };
 
 export class WebviewManager {
   private webviews: Map<string, WebviewEl> = new Map();
@@ -135,6 +191,7 @@ export class WebviewManager {
   private activeProfileId: string | null = null;
   private container: HTMLElement;
   private onBadgeChange: (profileId: string, count: number) => void;
+  private orgLogoCache: Map<string, string> = new Map();
 
   constructor(container: HTMLElement, onBadgeChange: (profileId: string, count: number) => void) {
     this.container = container;
@@ -193,12 +250,24 @@ export class WebviewManager {
       }
     });
 
-    // Title update → badge parsing
+    // Title update → badge parsing + Teams logo detection (post-login)
     wv.addEventListener('page-title-updated', (e) => {
       const title = (e as Event & { title: string }).title ?? '';
       const match = /^\((\d+)\)/.exec(title);
       const count = match ? parseInt(match[1], 10) : 0;
       this.onBadgeChange(profile.id, count);
+
+      // Inject Teams logo observer once after the page title is non-empty
+      // (indicates the app has rendered and the user is authenticated)
+      if (
+        profile.providerId === 'teams' &&
+        !wv.logoObserverInjected &&
+        title.length > 0 &&
+        this.readyWebviews.has(profile.id)
+      ) {
+        wv.logoObserverInjected = true;
+        wv.executeJavaScript(TEAMS_LOGO_OBSERVER_SCRIPT).catch(() => {});
+      }
     });
 
     // Relay ipc-message from webview preload (badge updates via sendToHost)
@@ -206,6 +275,12 @@ export class WebviewManager {
       const ev = e as Event & { channel: string; args: unknown[] };
       if (ev.channel === 'badge-update') {
         this.onBadgeChange(profile.id, (ev.args[0] as number) ?? 0);
+      } else if (ev.channel === 'org-logo-found') {
+        const url = ev.args[0] as string;
+        if (url) {
+          this.orgLogoCache.set(profile.id, url);
+          console.log(`[webview-manager] Org logo cached for profile ${profile.id}:`, url);
+        }
       } else if (ev.channel === 'link-open-request') {
         const url = ev.args[0] as string;
         console.log('[link] ipc-message link-open-request:', url, 'profile:', profile.id);
@@ -317,6 +392,10 @@ export class WebviewManager {
     return this.activeProfileId;
   }
 
+  getCachedOrgLogo(profileId: string): string | undefined {
+    return this.orgLogoCache.get(profileId);
+  }
+
   removeWebview(profileId: string): void {
     const wv = this.webviews.get(profileId);
     if (!wv) return;
@@ -389,6 +468,8 @@ declare global {
       renameProfile: (profileId: string, newName: string) => Promise<Profile>;
       setActiveProfile: (profileId: string) => void;
       updateZoomLevel: (profileId: string, zoomLevel: number) => Promise<Profile | undefined>;
+      updateProfileOrder: (profileIds: (string | undefined)[]) => Promise<boolean>;
+      updateProfileIcon: (profileId: string, icon: ProfileIcon | undefined) => Promise<Profile | undefined>;
       getPortalStatus: () => Promise<{ status: string; isWayland: boolean }>;
       showScreenSharePicker: () => Promise<string | null>;
       openPopout: (profileId: string) => void;

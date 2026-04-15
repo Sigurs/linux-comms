@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:;"
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Linux Comms</title>
@@ -65,6 +65,53 @@
             <button type="submit">Rename</button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- Icon picker modal -->
+    <div id="icon-picker-overlay" class="hidden">
+      <div id="icon-picker" role="dialog" aria-modal="true" aria-labelledby="icon-picker-title">
+        <h2 id="icon-picker-title">Choose Icon</h2>
+
+        <!-- Section 1: Company / server logo (hidden when unavailable) -->
+        <div id="icon-picker-company" class="hidden">
+          <p class="icon-picker-section-label">Company Logo</p>
+          <div id="icon-picker-company-grid" class="icon-picker-grid"></div>
+        </div>
+
+        <!-- Section 2: Icon library -->
+        <div id="icon-picker-library">
+          <p class="icon-picker-section-label">Icon Library</p>
+          <input
+            id="icon-picker-search"
+            type="search"
+            placeholder="Search icons…"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <div id="icon-picker-grid" class="icon-picker-grid"></div>
+          <p id="icon-picker-empty" class="hidden">No icons found.</p>
+        </div>
+
+        <!-- Section 3: Custom URL -->
+        <div id="icon-picker-custom">
+          <p class="icon-picker-section-label">Custom URL</p>
+          <input
+            id="icon-picker-custom-url"
+            type="url"
+            placeholder="https://example.com/icon.png"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <div id="icon-picker-custom-preview-wrap" class="hidden">
+            <img id="icon-picker-custom-preview" alt="" />
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-icon-picker-cancel">Cancel</button>
+          <button type="button" id="btn-icon-picker-confirm">Confirm</button>
+        </div>
       </div>
     </div>
 

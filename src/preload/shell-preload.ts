@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { IPC } from '../shared/ipc-channels';
-import type { Profile, NotificationPayload } from '../shared/types';
+import type { Profile, NotificationPayload, ProfileIcon } from '../shared/types';
 
 // Expose a typed, minimal API surface to the shell renderer
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -20,6 +20,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke(IPC.PROFILE_UPDATE_ZOOM, profileId, zoomLevel),
   updateProfileOrder: (profileIds: string[]) =>
     ipcRenderer.invoke(IPC.PROFILE_UPDATE_ORDER, profileIds),
+  updateProfileIcon: (profileId: string, icon: ProfileIcon | undefined) =>
+    ipcRenderer.invoke(IPC.PROFILE_UPDATE_ICON, profileId, icon),
 
   // Portal / screen share (X11 only)
   getPortalStatus: () => ipcRenderer.invoke(IPC.PORTAL_STATUS),

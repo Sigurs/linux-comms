@@ -2,6 +2,7 @@ import { ipcMain, session, BrowserWindow } from 'electron';
 import { IPC } from '../../shared/ipc-channels';
 import * as store from '../store/profile-store';
 import { providers } from '../../providers';
+import type { ProfileIcon } from '../../shared/types';
 
 export function registerProfileIpc(): void {
   ipcMain.handle(IPC.PROFILE_GET_ALL, () => {
@@ -35,6 +36,12 @@ export function registerProfileIpc(): void {
 
   ipcMain.handle(IPC.PROFILE_UPDATE_ZOOM, (_event, profileId: string, zoomLevel: number) => {
     const profile = store.updateZoomLevel(profileId, zoomLevel);
+    broadcastProfileUpdate();
+    return profile;
+  });
+
+  ipcMain.handle(IPC.PROFILE_UPDATE_ICON, (_event, profileId: string, icon: ProfileIcon | undefined) => {
+    const profile = store.updateProfileIcon(profileId, icon);
     broadcastProfileUpdate();
     return profile;
   });

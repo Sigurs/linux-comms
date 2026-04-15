@@ -2,7 +2,7 @@ import { app } from 'electron';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
-import type { Profile, ProfilesData } from '../../shared/types';
+import type { Profile, ProfilesData, ProfileIcon } from '../../shared/types';
 import { ZOOM_MIN, ZOOM_MAX } from '../../shared/types';
 import { getProvider } from '../../providers';
 
@@ -137,6 +137,19 @@ export function updateProfileOrder(profileIds: string[]): boolean {
 
   save(data);
   return true;
+}
+
+export function updateProfileIcon(id: string, icon: ProfileIcon | undefined): Profile | undefined {
+  const data = load();
+  const profile = data.profiles.find((p) => p.id === id);
+  if (!profile) return undefined;
+  if (icon === undefined) {
+    delete profile.icon;
+  } else {
+    profile.icon = icon;
+  }
+  save(data);
+  return profile;
 }
 
 export function getProfile(id: string): Profile | undefined {

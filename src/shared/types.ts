@@ -30,6 +30,11 @@ export interface ProviderConfigField {
   placeholder?: string;
 }
 
+export interface ProfileIcon {
+  type: 'server' | 'library' | 'custom' | 'emoji';
+  value: string;
+}
+
 export const ZOOM_MIN = -1;
 export const ZOOM_MAX = 9;
 
@@ -52,6 +57,8 @@ export interface Profile {
   zoomLevel?: number;
   /** Position in the sidebar for ordering */
   position?: number;
+  /** Custom icon chosen by the user; absent (or type 'emoji') means use provider Lucide default */
+  icon?: ProfileIcon;
 }
 
 export interface ProfilesData {

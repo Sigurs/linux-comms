@@ -18,6 +18,11 @@ contextBridge.exposeInMainWorld('__linuxComms', {
     ipcRenderer.send('notification:send', { profileId, title, body });
   },
 
+  /** Report a discovered organisation/server logo URL to the host renderer */
+  reportOrgLogo: (url: string) => {
+    ipcRenderer.sendToHost('org-logo-found', url);
+  },
+
   /** Request screen share sources (X11 only — on Wayland portal handles it) */
   requestScreenShare: async (): Promise<string | null> => {
     return ipcRenderer.invoke('screen-share:show-picker');

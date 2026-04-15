@@ -7,8 +7,8 @@
   "scripts": {
     "build": "npm run build:main && npm run build:renderer",
     "build:main": "tsc -p tsconfig.main.json",
-    "build:renderer": "node scripts/version.mjs --dev | xargs -I{} esbuild src/renderer/index.ts --bundle --outfile=dist/renderer/bundle.js --platform=browser --target=chrome130 \"--define:__APP_VERSION__=\\\"{}\\\"\" && node scripts/copy-renderer-assets.mjs",
-    "build:renderer:prod": "node scripts/version.mjs --current | xargs -I{} esbuild src/renderer/index.ts --bundle --outfile=dist/renderer/bundle.js --platform=browser --target=chrome130 \"--define:__APP_VERSION__=\\\"{}\\\"\" && node scripts/copy-renderer-assets.mjs",
+    "build:renderer": "node scripts/generate-lucide-index.mjs && node scripts/version.mjs --dev | xargs -I{} esbuild src/renderer/index.ts --bundle --outfile=dist/renderer/bundle.js --platform=browser --target=chrome130 \"--define:__APP_VERSION__=\\\"{}\\\"\" && node scripts/copy-renderer-assets.mjs",
+    "build:renderer:prod": "node scripts/generate-lucide-index.mjs && node scripts/version.mjs --current | xargs -I{} esbuild src/renderer/index.ts --bundle --outfile=dist/renderer/bundle.js --platform=browser --target=chrome130 \"--define:__APP_VERSION__=\\\"{}\\\"\" && node scripts/copy-renderer-assets.mjs",
     "build:picker": "node scripts/version.mjs --dev | xargs -I{} esbuild src/renderer/picker.ts --bundle --outfile=dist/renderer/picker-bundle.js --platform=browser --target=chrome130 \"--define:__APP_VERSION__=\\\"{}\\\"\"",
     "build:picker:prod": "node scripts/version.mjs --current | xargs -I{} esbuild src/renderer/picker.ts --bundle --outfile=dist/renderer/picker-bundle.js --platform=browser --target=chrome130 \"--define:__APP_VERSION__=\\\"{}\\\"\"",
     "watch:main": "tsc -p tsconfig.main.json --watch --preserveWatchOutput",
@@ -25,10 +25,11 @@
     "@typescript-eslint/eslint-plugin": "^8.58.2",
     "@typescript-eslint/parser": "^8.58.2",
     "concurrently": "^9.0.0",
-    "esbuild": "^0.28.0",
     "electron": "^41.2.0",
     "electron-builder": "^26.0.0",
+    "esbuild": "^0.28.0",
     "eslint": "^10.2.0",
+    "lucide-static": "^1.8.0",
     "prettier": "^3.8.3",
     "typescript": "^6.0.2"
   },

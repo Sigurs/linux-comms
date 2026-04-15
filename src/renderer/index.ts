@@ -1,9 +1,10 @@
-import type { Profile } from '../shared/types';
+import type { Profile, ProfileIcon } from '../shared/types';
 import { ZOOM_MIN, ZOOM_MAX } from '../shared/types';
 import { Sidebar } from './sidebar';
 import { WebviewManager } from './webview-manager';
 import { DragDropWrapper } from './drag-drop-wrapper';
 import { RocketChatPoller } from '../services/rocketchat-poller';
+import lucideIndex from './lucide-index';
 
 type Provider = { id: string; name: string; icon: string };
 type ProviderField = {
@@ -38,6 +39,19 @@ const rocketChatPoller = new RocketChatPoller((profileId, count) => {
 });
 
 const sidebar = new Sidebar(webviewManager, (id) => activateProfile(id));
+sidebar.setLucideIndex(lucideIndex);
+sidebar.setOnChangeIcon(async (profile) => {
+  const icon = await showIconPicker(profile);
+  if (icon) {
+    await window.electronAPI.updateProfileIcon(profile.id, icon);
+    // Optimistic update: reflect immediately via the profile update broadcast
+    const idx = profiles.findIndex((p) => p.id === profile.id);
+    if (idx !== -1) {
+      profiles[idx] = { ...profiles[idx], icon };
+      renderSidebar();
+    }
+  }
+});
 const dragDropWrapper = new DragDropWrapper(
   document.getElementById('profile-list')!,
   async (fromIndex, toIndex) => {
@@ -310,6 +324,203 @@ async function checkPortalStatus() {
   if (wl && status === 'unavailable') {
     document.getElementById('portal-warning')!.classList.remove('hidden');
   }
+}
+
+function showIconPicker(profile: Profile): Promise<ProfileIcon | null> {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById('icon-picker-overlay')!;
+    const companySection = document.getElementById('icon-picker-company')!;
+    const companyGrid = document.getElementById('icon-picker-company-grid')!;
+    const libraryGrid = document.getElementById('icon-picker-grid')!;
+    const searchInput = document.getElementById('icon-picker-search') as HTMLInputElement;
+    const emptyMsg = document.getElementById('icon-picker-empty')!;
+    const customUrlInput = document.getElementById('icon-picker-custom-url') as HTMLInputElement;
+    const customPreviewWrap = document.getElementById('icon-picker-custom-preview-wrap')!;
+    const customPreview = document.getElementById('icon-picker-custom-preview') as HTMLImageElement;
+    const confirmBtn = document.getElementById('btn-icon-picker-confirm')!;
+    const cancelBtn = document.getElementById('btn-icon-picker-cancel')!;
+
+    let selected: ProfileIcon | null = profile.icon ?? null;
+
+    // ── Helper: mark a cell as selected, deselect others ──
+    function selectCell(cell: HTMLElement, icon: ProfileIcon) {
+      overlay.querySelectorAll<HTMLElement>('.icon-picker-cell').forEach((c) =>
+        c.classList.remove('selected')
+      );
+      customPreview.classList.remove('selected');
+      cell.classList.add('selected');
+      selected = icon;
+    }
+
+    // ── Helper: select the custom URL preview ──
+    function selectCustomUrl(url: string) {
+      overlay.querySelectorAll<HTMLElement>('.icon-picker-cell').forEach((c) =>
+        c.classList.remove('selected')
+      );
+      customPreview.classList.add('selected');
+      selected = { type: 'custom', value: url };
+    }
+
+    // ── Section 1: Company Logo ──
+    companyGrid.innerHTML = '';
+    companySection.classList.add('hidden');
+
+    const buildCompanyCell = (src: string) => {
+      const icon: ProfileIcon = { type: 'server', value: src };
+      const cell = document.createElement('button');
+      cell.type = 'button';
+      cell.className = 'icon-picker-cell';
+      cell.title = 'Company logo';
+      const img = document.createElement('img');
+      img.alt = '';
+      img.src = src;
+      img.addEventListener('error', () => {
+        cell.remove();
+        if (companyGrid.childElementCount === 0) {
+          companySection.classList.add('hidden');
+        }
+      });
+      img.addEventListener('load', () => {
+        companySection.classList.remove('hidden');
+        // Pre-select if no icon is saved
+        if (!profile.icon) {
+          selectCell(cell, icon);
+        }
+      });
+      cell.appendChild(img);
+      cell.addEventListener('click', () => selectCell(cell, icon));
+      companyGrid.appendChild(cell);
+    };
+
+    if (profile.providerId === 'rocketchat') {
+      buildCompanyCell(`${profile.url.replace(/\/$/, '')}/assets/favicon.png`);
+    } else if (profile.providerId === 'teams') {
+      const cached = webviewManager.getCachedOrgLogo(profile.id);
+      if (cached) {
+        buildCompanyCell(cached);
+        companySection.classList.remove('hidden');
+      }
+    }
+
+    // ── Section 2: Library grid ──
+    const allIcons = Object.keys(lucideIndex);
+
+    function buildLibraryGrid(filter: string) {
+      libraryGrid.innerHTML = '';
+      const q = filter.toLowerCase();
+      const visible = q ? allIcons.filter((n) => n.includes(q)) : allIcons;
+
+      emptyMsg.classList.toggle('hidden', visible.length > 0);
+
+      for (const name of visible) {
+        const icon: ProfileIcon = { type: 'library', value: name };
+        const cell = document.createElement('button');
+        cell.type = 'button';
+        cell.className = 'icon-picker-cell';
+        cell.title = name;
+        cell.dataset.iconName = name;
+        cell.innerHTML = lucideIndex[name];
+        cell.addEventListener('click', () => selectCell(cell, icon));
+        libraryGrid.appendChild(cell);
+      }
+
+      // Restore selected state after rebuild
+      if (selected?.type === 'library') {
+        const cell = libraryGrid.querySelector<HTMLElement>(
+          `[data-icon-name="${selected.value}"]`
+        );
+        if (cell) cell.classList.add('selected');
+      }
+    }
+
+    searchInput.value = '';
+    buildLibraryGrid('');
+    searchInput.addEventListener('input', () => buildLibraryGrid(searchInput.value));
+
+    // ── Section 3: Custom URL ──
+    customUrlInput.value = '';
+    customPreviewWrap.classList.add('hidden');
+    customPreview.classList.remove('selected');
+
+    function tryLoadCustomUrl(url: string) {
+      if (!url) {
+        customPreviewWrap.classList.add('hidden');
+        customPreview.classList.remove('selected');
+        if (selected?.type === 'custom') selected = null;
+        return;
+      }
+      // Reset the preview src to trigger load/error events
+      customPreview.src = '';
+      customPreview.onload = () => {
+        customPreviewWrap.classList.remove('hidden');
+        selectCustomUrl(url);
+      };
+      customPreview.onerror = () => {
+        customPreviewWrap.classList.add('hidden');
+        customPreview.classList.remove('selected');
+        if (selected?.type === 'custom') selected = null;
+      };
+      customPreview.src = url;
+    }
+
+    customUrlInput.addEventListener('input', () => tryLoadCustomUrl(customUrlInput.value.trim()));
+    customPreview.addEventListener('click', () => {
+      if (customUrlInput.value.trim()) selectCustomUrl(customUrlInput.value.trim());
+    });
+
+    // ── Pre-select currently saved icon ──
+    if (profile.icon?.type === 'custom') {
+      customUrlInput.value = profile.icon.value;
+      tryLoadCustomUrl(profile.icon.value);
+    } else if (profile.icon?.type === 'server') {
+      // Company cell will be selected via its load handler if it matches
+      // For previously saved server icons that differ from the live URL, just keep selection
+    } else if (profile.icon?.type === 'library') {
+      const cell = libraryGrid.querySelector<HTMLElement>(
+        `[data-icon-name="${profile.icon.value}"]`
+      );
+      if (cell) {
+        cell.classList.add('selected');
+        cell.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    // ── Confirm / Cancel ──
+    function close() {
+      overlay.classList.add('hidden');
+      searchInput.removeEventListener('input', () => buildLibraryGrid(searchInput.value));
+      document.removeEventListener('keydown', onKeyDown);
+      cancelBtn.removeEventListener('click', onCancel);
+      confirmBtn.removeEventListener('click', onConfirm);
+      overlay.removeEventListener('click', onOverlayClick);
+    }
+
+    function onConfirm() {
+      close();
+      resolve(selected);
+    }
+
+    function onCancel() {
+      close();
+      resolve(null);
+    }
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onCancel();
+    }
+
+    function onOverlayClick(e: MouseEvent) {
+      if (e.target === overlay) onCancel();
+    }
+
+    confirmBtn.addEventListener('click', onConfirm);
+    cancelBtn.addEventListener('click', onCancel);
+    document.addEventListener('keydown', onKeyDown);
+    overlay.addEventListener('click', onOverlayClick);
+
+    overlay.classList.remove('hidden');
+    searchInput.focus();
+  });
 }
 
 // Boot

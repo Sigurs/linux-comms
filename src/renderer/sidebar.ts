@@ -4,16 +4,42 @@ import type { WebviewManager } from './webview-manager';
 
 type Provider = { id: string; name: string; icon: string };
 
-const PROVIDER_EMOJI: Record<string, string> = {
-  teams: '🟦',
-  rocketchat: '🚀',
+const PROVIDER_DEFAULT_ICON: Record<string, string> = {
+  rocketchat: 'rocket',
+  teams: 'users-round',
 };
+
+function providerDefaultSvg(providerId: string, lucideIndex: Record<string, string>): string {
+  const name = PROVIDER_DEFAULT_ICON[providerId] ?? 'message-circle';
+  const svg = lucideIndex[name] ?? lucideIndex['message-circle'] ?? '';
+  return `<span class="profile-icon profile-icon-svg">${svg}</span>`;
+}
+
+function renderIcon(profile: Profile, _provider: Provider | undefined, lucideIndex: Record<string, string>): string {
+  const icon = profile.icon;
+  if (!icon || icon.type === 'emoji') {
+    return providerDefaultSvg(profile.providerId, lucideIndex);
+  }
+  if (icon.type === 'server' || icon.type === 'custom') {
+    return `<img class="profile-icon profile-icon-img" src="${escapeHtml(icon.value)}" alt="" draggable="false" />`;
+  }
+  if (icon.type === 'library') {
+    const svg = lucideIndex[icon.value];
+    if (svg) {
+      return `<span class="profile-icon profile-icon-svg">${svg}</span>`;
+    }
+    return providerDefaultSvg(profile.providerId, lucideIndex);
+  }
+  return providerDefaultSvg(profile.providerId, lucideIndex);
+}
 
 export class Sidebar {
   private profileList: HTMLElement;
   private badges: Map<string, number> = new Map();
   private zoomLevels: Map<string, number> = new Map();
   private onZoomChange?: (profileId: string, zoomLevel: number) => void;
+  private onChangeIcon?: (profile: Profile) => void;
+  private lucideIndex: Record<string, string> = {};
 
   constructor(
     private webviewManager: WebviewManager,
@@ -22,8 +48,16 @@ export class Sidebar {
     this.profileList = document.getElementById('profile-list')!;
   }
 
+  setLucideIndex(index: Record<string, string>): void {
+    this.lucideIndex = index;
+  }
+
   setOnZoomChange(cb: (profileId: string, zoomLevel: number) => void): void {
     this.onZoomChange = cb;
+  }
+
+  setOnChangeIcon(cb: (profile: Profile) => void): void {
+    this.onChangeIcon = cb;
   }
 
   render(profiles: Profile[], providers: Provider[], activeProfileId: string | null): void {
@@ -49,7 +83,6 @@ export class Sidebar {
     activeProfileId: string | null
   ): HTMLElement {
     const provider = providers.find((p) => p.id === profile.providerId);
-    const emoji = PROVIDER_EMOJI[profile.providerId] ?? '💬';
     const isActive = profile.id === activeProfileId;
     const badgeCount = this.badges.get(profile.id) ?? 0;
 
@@ -60,7 +93,7 @@ export class Sidebar {
     btn.setAttribute('aria-label', btn.title);
 
     btn.innerHTML = `
-      <span class="profile-icon">${emoji}</span>
+      ${renderIcon(profile, provider, this.lucideIndex)}
       <span class="profile-label">${escapeHtml(profile.name)}</span>
       ${badgeCount > 0 ? `<span class="badge">${badgeCount > 99 ? '99+' : badgeCount}</span>` : ''}
     `;
@@ -129,6 +162,7 @@ export class Sidebar {
       <button data-action="popout">Pop out</button>
       <button data-action="reload">Reload</button>
       <button data-action="rename">Rename</button>
+      <button data-action="change-icon">Change Icon…</button>
       <hr class="separator" />
       <button data-action="zoom-in" ${!canZoomIn ? 'disabled' : ''}>Zoom In</button>
       <button data-action="zoom-out" ${!canZoomOut ? 'disabled' : ''}>Zoom Out</button>
@@ -156,6 +190,8 @@ export class Sidebar {
         if (newName) {
           await window.electronAPI.renameProfile(profile.id, newName);
         }
+      } else if (action === 'change-icon') {
+        this.onChangeIcon?.(profile);
       } else if (action === 'zoom-in') {
         await this.handleZoomChange(profile.id, currentZoom + 1);
       } else if (action === 'zoom-out') {
