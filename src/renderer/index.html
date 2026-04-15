@@ -15,8 +15,8 @@
       <aside id="sidebar">
         <nav id="profile-list"></nav>
         <div id="sidebar-footer">
-          <button id="btn-add-profile" class="icon-btn" title="Add profile">+</button>
-          <button id="btn-about" class="about-btn"></button>
+          <button type="button" id="btn-add-profile" class="icon-btn" title="Add profile">+</button>
+          <button type="button" id="btn-about" class="about-btn"></button>
         </div>
       </aside>
 
@@ -24,7 +24,7 @@
         <div id="webview-container"></div>
         <div id="empty-state">
           <p>Add a profile to get started.</p>
-          <button id="btn-add-profile-empty">Add profile</button>
+          <button type="button" id="btn-add-profile-empty">Add profile</button>
         </div>
       </main>
     </div>
@@ -118,7 +118,7 @@
     <!-- Portal warning banner -->
     <div id="portal-warning" class="hidden">
       ⚠ Screen sharing requires xdg-desktop-portal which was not detected on this system.
-      <button id="btn-dismiss-warning">✕</button>
+      <button type="button" id="btn-dismiss-warning">✕</button>
     </div>
 
     <!-- About modal -->
@@ -126,11 +126,11 @@
       <div id="about-modal" role="dialog" aria-modal="true" aria-labelledby="about-title">
         <div id="about-header">
           <h2 id="about-title">About Linux Comms</h2>
-          <button id="btn-about-close" aria-label="Close">✕</button>
+          <button type="button" id="btn-about-close" aria-label="Close">✕</button>
         </div>
         <p id="about-version"></p>
         <p id="about-github">
-          <button id="btn-about-github">View on GitHub</button>
+          <button type="button" id="btn-about-github">View on GitHub</button>
         </p>
         <h3>Open Source Licenses</h3>
         <textarea id="about-licenses" readonly spellcheck="false"></textarea>

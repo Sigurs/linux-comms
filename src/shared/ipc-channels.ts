@@ -1,45 +1,45 @@
 /** IPC channel name constants shared between main, preload, and renderer */
 export const IPC = {
-  // Profile management
-  PROFILE_GET_ALL: 'profile:get-all',
-  PROFILE_ADD: 'profile:add',
-  PROFILE_REMOVE: 'profile:remove',
-  PROFILE_RENAME: 'profile:rename',
-  PROFILE_SET_ACTIVE: 'profile:set-active',
-  PROFILE_UPDATE_ZOOM: 'profile:update-zoom',
-  PROFILE_UPDATE_ORDER: 'profile:update-order',
-  PROFILE_UPDATE_ICON: 'profile:update-icon',
-  PROFILE_UPDATED: 'profile:updated', // main → renderer (push)
+	// Profile management
+	PROFILE_GET_ALL: 'profile:get-all',
+	PROFILE_ADD: 'profile:add',
+	PROFILE_REMOVE: 'profile:remove',
+	PROFILE_RENAME: 'profile:rename',
+	PROFILE_SET_ACTIVE: 'profile:set-active',
+	PROFILE_UPDATE_ZOOM: 'profile:update-zoom',
+	PROFILE_UPDATE_ORDER: 'profile:update-order',
+	PROFILE_UPDATE_ICON: 'profile:update-icon',
+	PROFILE_UPDATED: 'profile:updated', // main → renderer (push)
 
-  // Screen sharing
-  SCREEN_SHARE_GET_SOURCES: 'screen-share:get-sources',
-  SCREEN_SHARE_SHOW_PICKER: 'screen-share:show-picker',
-  SCREEN_SHARE_PICK_SOURCE: 'screen-share:pick-source', // picker → main
-  PORTAL_STATUS: 'portal:status',
+	// Screen sharing
+	SCREEN_SHARE_GET_SOURCES: 'screen-share:get-sources',
+	SCREEN_SHARE_SHOW_PICKER: 'screen-share:show-picker',
+	SCREEN_SHARE_PICK_SOURCE: 'screen-share:pick-source', // picker → main
+	PORTAL_STATUS: 'portal:status',
 
-  // Notifications (webview preload → main)
-  NOTIFICATION_SEND: 'notification:send',
-  NOTIFICATION_CLICK: 'notification:click', // main → renderer
+	// Notifications (webview preload → main)
+	NOTIFICATION_SEND: 'notification:send',
+	NOTIFICATION_CLICK: 'notification:click', // main → renderer
 
-  // Badge/title updates (renderer → renderer via host msg, then renderer → main)
-  BADGE_UPDATE: 'badge:update',
+	// Badge/title updates (renderer → renderer via host msg, then renderer → main)
+	BADGE_UPDATE: 'badge:update',
 
-  // Pop-out
-  POPOUT_OPEN: 'popout:open',
-  POPOUT_CLOSED: 'popout:closed', // main → renderer
+	// Pop-out
+	POPOUT_OPEN: 'popout:open',
+	POPOUT_CLOSED: 'popout:closed', // main → renderer
 
-  // Link opening
-  LINK_OPEN_PROMPT: 'link:open-prompt',
+	// Link opening
+	LINK_OPEN_PROMPT: 'link:open-prompt',
 
-  // App info
-  APP_GET_PLATFORM: 'app:get-platform',
-  APP_IS_WAYLAND: 'app:is-wayland',
+	// App info
+	APP_GET_PLATFORM: 'app:get-platform',
+	APP_IS_WAYLAND: 'app:is-wayland',
 
-  // Shell
-  SHELL_OPEN_EXTERNAL: 'shell:open-external',
+	// Shell
+	SHELL_OPEN_EXTERNAL: 'shell:open-external',
 
-  // Window management
-  WINDOW_FOCUS: 'window:focus',
+	// Window management
+	WINDOW_FOCUS: 'window:focus',
 } as const;
 
 export type IpcChannel = (typeof IPC)[keyof typeof IPC];

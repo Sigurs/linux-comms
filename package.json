@@ -17,24 +17,17 @@
     "dist": "node scripts/version.mjs --bump && npm run build:main && npm run build:renderer:prod && npm run build:picker:prod && electron-builder --linux",
     "dist:appimage": "node scripts/version.mjs --bump && npm run build:main && npm run build:renderer:prod && npm run build:picker:prod && electron-builder --linux AppImage",
     "dist:flatpak": "node scripts/version.mjs --bump && npm run build:main && npm run build:renderer:prod && npm run build:picker:prod && electron-builder --linux flatpak",
-    "lint": "eslint src --ext .ts",
-    "format": "prettier --write \"src/**/*.ts\""
+    "lint": "biome check src/",
+    "format": "biome format --write src/"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.12",
     "@types/node": "^25.6.0",
-    "@typescript-eslint/eslint-plugin": "^8.58.2",
-    "@typescript-eslint/parser": "^8.58.2",
-    "concurrently": "^9.0.0",
     "electron": "^41.2.0",
     "electron-builder": "^26.0.0",
     "esbuild": "^0.28.0",
-    "eslint": "^10.2.0",
     "lucide-static": "^1.8.0",
-    "prettier": "^3.8.3",
     "typescript": "^6.0.2"
-  },
-  "dependencies": {
-    "react-beautiful-dnd": "^13.1.1"
   },
   "build": {
     "appId": "io.sigurs.LinuxComms",
