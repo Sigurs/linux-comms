@@ -18,6 +18,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setActiveProfile: (profileId: string) => ipcRenderer.send(IPC.PROFILE_SET_ACTIVE, profileId),
   updateZoomLevel: (profileId: string, zoomLevel: number) =>
     ipcRenderer.invoke(IPC.PROFILE_UPDATE_ZOOM, profileId, zoomLevel),
+  updateProfileOrder: (profileIds: string[]) =>
+    ipcRenderer.invoke(IPC.PROFILE_UPDATE_ORDER, profileIds),
 
   // Portal / screen share (X11 only)
   getPortalStatus: () => ipcRenderer.invoke(IPC.PORTAL_STATUS),

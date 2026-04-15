@@ -38,6 +38,14 @@ export function registerProfileIpc(): void {
     broadcastProfileUpdate();
     return profile;
   });
+
+  ipcMain.handle(IPC.PROFILE_UPDATE_ORDER, (_event, profileIds: string[]) => {
+    const success = store.updateProfileOrder(profileIds);
+    if (success) {
+      broadcastProfileUpdate();
+    }
+    return success;
+  });
 }
 
 function broadcastProfileUpdate(): void {

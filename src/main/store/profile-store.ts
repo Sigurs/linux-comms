@@ -115,6 +115,30 @@ export function updateZoomLevel(id: string, zoomLevel: number): Profile | undefi
   return profile;
 }
 
+let debounceTimer: NodeJS.Timeout | null = null;
+
+export function updateProfileOrder(profileIds: string[]): boolean {
+  const data = load();
+
+  // Validate that all profile IDs exist
+  const profileMap = new Map(data.profiles.map((p) => [p.id, p]));
+  const invalidIds = profileIds.filter((id) => !profileMap.has(id));
+
+  if (invalidIds.length > 0) {
+    console.error(`[profile-store] Invalid profile IDs in order update: ${invalidIds.join(', ')}`);
+    return false;
+  }
+
+  // Update positions based on the new order
+  data.profiles = profileIds.map((id, index) => {
+    const profile = profileMap.get(id)!;
+    return { ...profile, position: index };
+  });
+
+  save(data);
+  return true;
+}
+
 export function getProfile(id: string): Profile | undefined {
   const data = load();
   const profile = data.profiles.find((p) => p.id === id);

@@ -2,6 +2,7 @@ import type { Profile } from '../shared/types';
 import { ZOOM_MIN, ZOOM_MAX } from '../shared/types';
 import { Sidebar } from './sidebar';
 import { WebviewManager } from './webview-manager';
+import { DragDropWrapper } from './drag-drop-wrapper';
 
 type Provider = { id: string; name: string; icon: string };
 type ProviderField = {
@@ -28,6 +29,29 @@ const webviewManager = new WebviewManager(webviewContainer, (profileId, count) =
 });
 
 const sidebar = new Sidebar(webviewManager, (id) => activateProfile(id));
+const dragDropWrapper = new DragDropWrapper(
+  document.getElementById('profile-list')!,
+  async (fromIndex, toIndex) => {
+    // Get current profile IDs in order
+    const profileElements = Array.from(document.querySelectorAll('.profile-entry'));
+    const profileIds = profileElements.map((el) => el.dataset.profileId);
+
+    // Reorder the array
+    const [movedId] = profileIds.splice(fromIndex, 1);
+    profileIds.splice(toIndex, 0, movedId);
+
+    // Optimistic UI update - re-render immediately
+    renderSidebar();
+
+    // Update backend with debouncing to handle rapid reordering
+    try {
+      await window.electronAPI.updateProfileOrder(profileIds);
+    } catch (error) {
+      console.error('Failed to update profile order:', error);
+      // Show error to user or revert UI
+    }
+  }
+);
 
 async function init() {
   const { profiles: p, providers } = await window.electronAPI.getAll();

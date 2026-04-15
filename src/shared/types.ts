@@ -50,6 +50,8 @@ export interface Profile {
   poppedOut?: boolean;
   /** Zoom level for this profile (-1 to +9, where 0 is 100%) */
   zoomLevel?: number;
+  /** Position in the sidebar for ordering */
+  position?: number;
 }
 
 export interface ProfilesData {

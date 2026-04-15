@@ -29,7 +29,14 @@ export class Sidebar {
   render(profiles: Profile[], providers: Provider[], activeProfileId: string | null): void {
     this.profileList.innerHTML = '';
 
-    for (const profile of profiles) {
+    // Sort profiles by position if available, otherwise maintain original order
+    const sortedProfiles = [...profiles].sort((a, b) => {
+      const posA = a.position ?? Number.MAX_SAFE_INTEGER;
+      const posB = b.position ?? Number.MAX_SAFE_INTEGER;
+      return posA - posB;
+    });
+
+    for (const profile of sortedProfiles) {
       this.zoomLevels.set(profile.id, profile.zoomLevel ?? 0);
       const entry = this.createEntry(profile, providers, activeProfileId);
       this.profileList.appendChild(entry);
