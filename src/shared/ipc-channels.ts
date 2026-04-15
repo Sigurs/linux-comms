@@ -35,6 +35,9 @@ export const IPC = {
   APP_GET_PLATFORM: 'app:get-platform',
   APP_IS_WAYLAND: 'app:is-wayland',
 
+  // Shell
+  SHELL_OPEN_EXTERNAL: 'shell:open-external',
+
   // Window management
   WINDOW_FOCUS: 'window:focus',
 } as const;

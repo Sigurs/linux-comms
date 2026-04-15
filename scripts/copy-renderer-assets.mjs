@@ -22,4 +22,9 @@ copyFileSync(
   join(root, 'dist', 'renderer', 'picker.html')
 );
 
+copyFileSync(
+  join(root, 'src', 'renderer', 'licenses.json'),
+  join(root, 'dist', 'renderer', 'licenses.json')
+);
+
 console.log('Renderer assets copied to dist/renderer/');

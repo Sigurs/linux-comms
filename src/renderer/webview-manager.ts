@@ -474,6 +474,7 @@ declare global {
       showScreenSharePicker: () => Promise<string | null>;
       openPopout: (profileId: string) => void;
       openLinkChoice: (url: string, profileId: string) => Promise<void>;
+      openExternal: (url: string) => Promise<void>;
       onProfileUpdated: (
         cb: (data: { profiles: Profile[]; providers: unknown[] }) => void
       ) => () => void;

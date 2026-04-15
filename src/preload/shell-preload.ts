@@ -33,6 +33,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Link opening
   openLinkChoice: (url: string, profileId: string) =>
     ipcRenderer.invoke(IPC.LINK_OPEN_PROMPT, url, profileId),
+  openExternal: (url: string) => ipcRenderer.invoke(IPC.SHELL_OPEN_EXTERNAL, url),
 
   // Event subscriptions
   onProfileUpdated: (cb: (data: { profiles: Profile[]; providers: unknown[] }) => void) => {

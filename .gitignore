@@ -160,3 +160,4 @@ dist
 
 release/
 .build-counter.json
+src/renderer/licenses.json

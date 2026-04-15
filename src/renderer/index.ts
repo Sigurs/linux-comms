@@ -96,15 +96,11 @@ async function init() {
     rocketChatPoller.setAppActive(false);
   });
 
-  // Display build version in sidebar footer
-  const versionEl = document.getElementById('app-version');
-  if (versionEl) {
+  // Set About button label to the current CalVer
+  const aboutBtn = document.getElementById('btn-about');
+  if (aboutBtn) {
     const version = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
-    versionEl.textContent = version;
-    versionEl.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      navigator.clipboard.writeText(version);
-    });
+    aboutBtn.textContent = version;
   }
 }
 
@@ -224,6 +220,16 @@ function setupEventListeners() {
     document.getElementById('portal-warning')!.classList.add('hidden');
   });
 
+  // About modal
+  document.getElementById('btn-about')!.addEventListener('click', openAboutModal);
+  document.getElementById('btn-about-close')!.addEventListener('click', closeAboutModal);
+  document.getElementById('about-overlay')!.addEventListener('click', (e) => {
+    if (e.target === document.getElementById('about-overlay')) closeAboutModal();
+  });
+  document.getElementById('btn-about-github')!.addEventListener('click', () => {
+    void window.electronAPI.openExternal('https://github.com/Sigurs/linux-comms');
+  });
+
   // Pop-out closed — re-embed without switching active profile
   window.electronAPI.onPopoutClosed((profileId) => {
     webviewManager.restorePopoutSilent(profileId);
@@ -232,6 +238,12 @@ function setupEventListeners() {
 
 function setupKeyboardShortcuts() {
   document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (!document.getElementById('about-overlay')!.classList.contains('hidden')) {
+        closeAboutModal();
+        return;
+      }
+    }
     if (e.ctrlKey && e.key >= '1' && e.key <= '9') {
       const idx = parseInt(e.key, 10) - 1;
       const profile = profiles[idx];
@@ -301,6 +313,43 @@ function openAddProfileModal() {
 
 function closeModal() {
   document.getElementById('modal-overlay')!.classList.add('hidden');
+}
+
+type LicenseEntry = { name: string; version: string; license: string; licenseText: string | null };
+let licenseText: string | null = null;
+
+async function openAboutModal() {
+  const overlay = document.getElementById('about-overlay')!;
+  const versionEl = document.getElementById('about-version')!;
+  const licensesBox = document.getElementById('about-licenses') as HTMLTextAreaElement;
+
+  const version = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
+  versionEl.textContent = `Version ${version}`;
+
+  overlay.classList.remove('hidden');
+
+  if (licenseText === null) {
+    licensesBox.value = 'Loading…';
+    try {
+      const res = await fetch('./licenses.json');
+      const entries: LicenseEntry[] = await res.json();
+      licenseText = entries
+        .map((pkg) => {
+          const header = `${pkg.name} ${pkg.version} (${pkg.license})`;
+          const divider = '─'.repeat(header.length);
+          const body = pkg.licenseText ?? `See https://spdx.org/licenses/${pkg.license.replace(/\s+/g, '-')}.html`;
+          return `${header}\n${divider}\n${body}`;
+        })
+        .join('\n\n\n');
+    } catch {
+      licenseText = 'Failed to load license data.';
+    }
+    licensesBox.value = licenseText;
+  }
+}
+
+function closeAboutModal() {
+  document.getElementById('about-overlay')!.classList.add('hidden');
 }
 
 function renderProviderExtraFields(providerId: string) {
