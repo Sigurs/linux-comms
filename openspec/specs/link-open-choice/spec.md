@@ -76,7 +76,13 @@ Popup windows opened via the link choice dialog SHALL maintain the same session 
 
 ### Requirement: Dialog is non-blocking and informative
 
-The link choice dialog SHALL provide clear information without disrupting the user's workflow unnecessarily.
+The link choice dialog SHALL provide clear information without disrupting the user's workflow unnecessarily. The dialog SHALL be displayed as a child of the main application window so that it cannot fall behind it.
+
+#### Scenario: Dialog appears in front of the main window
+
+- **WHEN** a link-open dialog is shown
+- **THEN** the dialog SHALL appear in front of the main application window
+- **AND** the dialog SHALL NOT be obscurable by clicking the main window
 
 #### Scenario: Dialog shows truncated URL for long URLs
 

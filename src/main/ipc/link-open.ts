@@ -3,7 +3,7 @@ import { join } from 'path';
 import { IPC } from '../../shared/ipc-channels';
 import { getAllProfiles } from '../store/profile-store';
 import { getProvider } from '../../providers';
-import { applySessionPermissions } from '../window';
+import { applySessionPermissions, getMainWindow } from '../window';
 
 function truncateUrl(url: string, maxLength: number = 60): string {
   if (url.length <= maxLength) return url;
@@ -22,18 +22,23 @@ export function registerLinkOpenIpc(): void {
 
     const truncatedUrl = truncateUrl(url, 60);
 
+    const dialogOptions = {
+      type: 'question' as const,
+      title: 'Open Link',
+      message: `How would you like to open this link?`,
+      detail: truncatedUrl,
+      buttons: ['Open in Browser', 'Open in Popup', 'Cancel'],
+      defaultId: 0,
+      cancelId: 2,
+    };
+    const mainWindow = getMainWindow();
+
     dialogOpen = true;
     let result: Electron.MessageBoxReturnValue;
     try {
-      result = await dialog.showMessageBox({
-        type: 'question',
-        title: 'Open Link',
-        message: `How would you like to open this link?`,
-        detail: truncatedUrl,
-        buttons: ['Open in Browser', 'Open in Popup', 'Cancel'],
-        defaultId: 0,
-        cancelId: 2,
-      });
+      result = mainWindow
+        ? await dialog.showMessageBox(mainWindow, dialogOptions)
+        : await dialog.showMessageBox(dialogOptions);
     } finally {
       dialogOpen = false;
     }
