@@ -42,8 +42,8 @@ A modern, Wayland-native Electron application that brings Microsoft Teams and Ro
 
 ```bash
 # Download the latest AppImage from releases
-chmod +x LinuxComms-*.AppImage
-./LinuxComms-*.AppImage
+chmod +x Linux-Comms-*.AppImage
+./Linux-Comms-*.AppImage
 ```
 
 ### Flatpak
@@ -71,17 +71,26 @@ chmod +x LinuxComms-*.AppImage
 ### Build Commands
 
 ```bash
-# Install dependencies
-npm install
+# Install dependencies (without optional packages)
+npm install --no-optional
 
 # Development mode
 npm start
 
 # Build AppImage
 npm run dist:appimage
+```
 
-# Build Flatpak
-npm run dist:flatpak
+### Dependency Management
+
+This project follows strict dependency management practices:
+- Optional dependencies are excluded by default
+- Platform-specific dependencies are minimized for Linux targets
+- See [DEPENDENCIES.md](DEPENDENCIES.md) for full documentation
+
+To add new dependencies:
+```bash
+npm install --save-exact --no-optional <package>
 ```
 
 ## 🔧 Technical Details

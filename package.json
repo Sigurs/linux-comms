@@ -1,6 +1,6 @@
 {
   "name": "linux-comms",
-  "version": "0.1.0",
+  "version": "26.415.2",
   "description": "Unified Linux desktop client for Teams, RocketChat, and more",
   "main": "dist/main/index.js",
   "private": true,
@@ -31,7 +31,7 @@
   },
   "build": {
     "appId": "io.sigurs.LinuxComms",
-    "productName": "Linux Comms",
+    "productName": "Linux-Comms",
     "copyright": "Copyright © 2026 sigurs",
     "directories": {
       "output": "release",
@@ -60,27 +60,10 @@
           "Keywords": "chat;communication;teams;rocketchat;video;voice",
           "StartupWMClass": "linux-comms"
         }
-      }
-    },
-    "flatpak": {
-      "runtimeVersion": "24.08",
-      "baseVersion": "24.08",
-      "sdk": "org.freedesktop.Sdk",
-      "runtime": "org.freedesktop.Platform",
-      "finishArgs": [
-        "--share=ipc",
-        "--share=network",
-        "--socket=wayland",
-        "--socket=fallback-x11",
-        "--socket=pulseaudio",
-        "--socket=session-bus",
-        "--device=dri",
-        "--filesystem=xdg-run/pipewire-0",
-        "--talk-name=org.freedesktop.portal.Desktop",
-        "--talk-name=org.freedesktop.portal.ScreenCast",
-        "--talk-name=org.freedesktop.portal.Camera",
-        "--talk-name=org.freedesktop.Notifications"
-      ]
+      },
+      "compression": "maximum",
+      "executableName": "linux-comms",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
     "publish": {
       "provider": "github",
