@@ -4,8 +4,24 @@ import { IPC } from '../../shared/ipc-channels';
 import { getAllProfiles } from '../store/profile-store';
 import { getProvider } from '../../providers';
 import { applySessionPermissions } from '../window';
+import { showLinkOpenDialog } from './link-open';
 
 const popoutWindows = new Map<string, BrowserWindow>();
+
+function matchesTrustedDomain(url: string, patterns: string[]): boolean {
+  try {
+    const hostname = new URL(url).hostname;
+    return patterns.some((pattern) => {
+      if (pattern.startsWith('*.')) {
+        const suffix = pattern.slice(1); // e.g. ".microsoft.com"
+        return hostname === pattern.slice(2) || hostname.endsWith(suffix);
+      }
+      return hostname === pattern;
+    });
+  } catch {
+    return false;
+  }
+}
 
 export function registerPopoutIpc(): void {
   ipcMain.on(IPC.POPOUT_OPEN, (_event, profileId: string) => {
@@ -51,6 +67,24 @@ export function registerPopoutIpc(): void {
     win.webContents.on('page-title-updated', (e, title) => {
       e.preventDefault();
       win.setTitle(`${title} - ${profile.name}`);
+    });
+
+    // Intercept window.open() and target="_blank" link clicks
+    win.webContents.setWindowOpenHandler(({ url }) => {
+      void showLinkOpenDialog(url, profileId, win);
+      return { action: 'deny' };
+    });
+
+    // Intercept same-frame navigation to external origins
+    win.webContents.on('will-navigate', (event, url) => {
+      try {
+        if (new URL(url).origin === new URL(profile.url).origin) return;
+        if (provider.trustedDomains && matchesTrustedDomain(url, provider.trustedDomains)) return;
+      } catch {
+        return;
+      }
+      event.preventDefault();
+      void showLinkOpenDialog(url, profileId, win);
     });
 
     win.on('closed', () => {
