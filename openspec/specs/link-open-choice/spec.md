@@ -2,13 +2,30 @@
 
 ### Requirement: User can choose how to open external links
 
-When a link is clicked that would open a new window, the system SHALL prompt the user to choose between opening in a popup window or in their default browser.
+When a link is clicked that would navigate outside the current webview origin, the system SHALL prompt the user to choose between opening in a popup window or in their default browser. This applies to all link-opening mechanisms: programmatic `window.open()` calls, native `new-window` webview events, same-frame navigations to external origins, and anchor element clicks with `target="_blank"`. This dialog SHALL only be shown for URLs that are not matched by the originating profile's provider `trustedDomains`.
 
-#### Scenario: Link opens popup choice dialog
+#### Scenario: Link opens popup choice dialog via window.open
 
-- **WHEN** a user clicks a link that triggers a new window from within a webview
+- **WHEN** a user clicks a link that triggers `window.open()` from within a webview
 - **THEN** the system SHALL display a dialog with two options: "Open in Popup" and "Open in Browser"
 - **AND** the dialog SHALL show the URL being opened
+
+#### Scenario: Link opens popup choice dialog via anchor click
+
+- **WHEN** a user clicks an anchor element with `target="_blank"` pointing to an external origin
+- **THEN** the system SHALL display the link-choice dialog
+- **AND** the browser SHALL NOT open a new window or tab natively
+
+#### Scenario: Link opens popup choice dialog via new-window event
+
+- **WHEN** a link triggers the webview's native new-window event (e.g. right-click → Open Link)
+- **THEN** the system SHALL display the link-choice dialog
+
+#### Scenario: Same-origin anchor clicks are not intercepted
+
+- **WHEN** a user clicks an anchor element with `target="_blank"` pointing to the same origin as the webview's profile URL
+- **THEN** the system SHALL NOT intercept the click or show the dialog
+- **AND** the browser SHALL handle the navigation normally
 
 #### Scenario: User chooses popup option
 
@@ -28,6 +45,11 @@ When a link is clicked that would open a new window, the system SHALL prompt the
 - **WHEN** the user closes or cancels the dialog without selecting an option
 - **THEN** no window SHALL be opened
 - **AND** the URL SHALL NOT be opened anywhere
+
+#### Scenario: Trusted domain navigation bypasses dialog
+- **WHEN** a `will-navigate` event fires for a URL matching the provider's `trustedDomains`
+- **THEN** the navigation SHALL proceed without showing the dialog
+- **AND** no user interaction SHALL be required
 
 ### Requirement: Popup window uses profile session
 
@@ -52,8 +74,8 @@ The link choice dialog SHALL provide clear information without disrupting the us
 #### Scenario: Dialog shows truncated URL for long URLs
 
 - **WHEN** the URL to be opened is longer than 60 characters
-- **THEN** the dialog SHALL display a truncated version with ellipsis
-- **AND** the full URL SHALL be accessible (e.g., via tooltip or expansion)
+- **THEN** the dialog SHALL display only the truncated version (with ellipsis) in the detail field
+- **AND** the full URL SHALL NOT be included in the dialog detail text to prevent surface allocation crashes on Wayland
 
 #### Scenario: Dialog has sensible default focus
 

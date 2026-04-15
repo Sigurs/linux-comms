@@ -2,7 +2,6 @@ import { BrowserWindow, session } from 'electron';
 import { join } from 'path';
 import { getAllProfiles } from './store/profile-store';
 import { getProvider } from '../providers';
-import { isWayland } from './platform/wayland';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -78,13 +77,4 @@ export function applySessionPermissions(
       alwaysAllowed.includes(permission)
     );
   });
-
-  // On Wayland, getDisplayMedia must be routed through Electron's PipeWire/portal path.
-  // Without this handler, Electron rejects all getDisplayMedia calls before Chromium's
-  // WebRTCPipeWireCapturer feature can route them to xdg-desktop-portal.
-  if (isWayland()) {
-    sess.setDisplayMediaRequestHandler((_request, callback) => {
-      callback({ audio: 'loopback' });
-    }, { useSystemPicker: true });
-  }
 }
