@@ -1,65 +1,138 @@
-# Linux Comms
+# 🎯 Linux Comms
 
-A unified Electron-based desktop client for Linux hosting multiple communication apps (Microsoft Teams, Rocket.Chat) with full voice/video, screen sharing, and Wayland support.
+<span style="color:#4CC9F0">**Unified Linux Desktop Client for Teams & Rocket.Chat**</span>
 
-## Features
+A modern, Wayland-native Electron application that brings Microsoft Teams and Rocket.Chat together in a single, integrated desktop experience with full voice/video and screen sharing support.
 
-- **Multiple providers**: Microsoft Teams and Rocket.Chat in one window
-- **Profile isolation**: Multiple accounts per app, fully isolated sessions
-- **Wayland-native**: Runs on Wayland via Ozone backend; falls back to X11
-- **Voice & video calls**: Powered by PipeWire / PulseAudio via WebRTC
-- **Screen sharing**: xdg-desktop-portal on Wayland; desktopCapturer picker on X11
-- **Native notifications**: Bridged from webview to OS notifications
-- **System tray**: Minimize to tray, unread activity indicator
+## ⚡ Key Features
 
-## Requirements
+### 🔄 **Multi-Provider Integration**
 
-Linux 5.15+ with a Wayland compositor (GNOME 42+, KDE Plasma 5.27+, or Sway 1.8+). Screen sharing requires PipeWire 0.3.48+ and xdg-desktop-portal 1.15+. Node.js 20 LTS+ for building.
+- ✅ Microsoft Teams and Rocket.Chat in one window
+- ✅ Seamless switching between platforms
+- ✅ Unified notification system
 
-## Installation
+### 👤 **Profile Management**
 
-**AppImage:**
+- ✅ Multiple accounts per platform
+- ✅ Complete session isolation
+- ✅ Easy profile switching
+
+### 🖥️ **Wayland Native**
+
+- ✅ Full Wayland support via Ozone backend
+- ✅ Automatic X11 fallback
+- ✅ Native screen sharing on Wayland
+
+### 🎤 **Advanced Communication**
+
+- ✅ Voice & video calls (WebRTC)
+- ✅ Screen sharing (PipeWire/xdg-desktop-portal)
+- ✅ Native system notifications
+
+### 💼 **System Integration**
+
+- ✅ System tray with unread indicators
+- ✅ Native Linux notifications
+- ✅ Proper window management
+
+## 📦 Installation
+
+### AppImage (Recommended)
 
 ```bash
+# Download the latest AppImage from releases
 chmod +x LinuxComms-*.AppImage
 ./LinuxComms-*.AppImage
 ```
 
-## Building
+### Flatpak
 
 ```bash
+# Coming soon - Flatpak build available in future releases
+```
+
+## 🚀 Usage
+
+1. **Add your first profile**: Click "Add Profile" and select Teams or Rocket.Chat
+2. **Sign in**: Complete the authentication process in the webview
+3. **Switch profiles**: Use the sidebar to navigate between accounts
+4. **System tray**: Minimize to tray for quick access
+
+## 🛠️ Building from Source
+
+### Requirements
+
+- Linux 5.15+ (Wayland recommended)
+- Node.js 20+ LTS
+- PipeWire 0.3.48+ (for screen sharing)
+- xdg-desktop-portal 1.15+
+
+### Build Commands
+
+```bash
+# Install dependencies
 npm install
-npm start              # Development
-npm run dist:appimage  # Build AppImage
-npm run dist:flatpak   # Build Flatpak
+
+# Development mode
+npm start
+
+# Build AppImage
+npm run dist:appimage
+
+# Build Flatpak
+npm run dist:flatpak
 ```
 
-Generate icons before packaging:
+## 🔧 Technical Details
 
-```bash
-for s in 16 32 48 64 128 256 512; do
-  magick -background none -resize ${s}x${s} assets/icon.svg assets/icons/${s}x${s}.png
-done
-```
+### Architecture
 
-## Wayland
+- **Frontend**: Electron with React-based UI
+- **Backend**: Node.js with custom IPC channels
+- **Webviews**: Isolated sessions for each profile
+- **Platform**: Wayland (Ozone) with X11 fallback
 
-Auto-detected via `WAYLAND_DISPLAY`. Screen sharing requires:
+### Supported Platforms
 
-- GNOME: `xdg-desktop-portal-gnome`
-- KDE: `xdg-desktop-portal-kde`
-- Sway/Hyprland: `xdg-desktop-portal-wlr`
+- **Wayland**: GNOME 42+, KDE Plasma 5.27+, Sway 1.8+
+- **X11**: Full fallback support
+- **Screen Sharing**: xdg-desktop-portal integration
 
-## Known Issues
+## ⚠️ Important Notes
 
-- Screen sharing unavailable on Sway < 1.8 — upgrade or use xdg-desktop-portal-wlr
-- Teams login loop with some corporate SSO — remove and re-add profile
-- Blurry rendering on XWayland — ensure `WAYLAND_DISPLAY` is set
+<span style="color:#F72585">**Personal Project Disclaimer**</span>
 
-## Disclaimer
+This is an **independent hobby project** with **no affiliation** to:
 
-This is an independent hobby project with no affiliation with Microsoft or Rocket.Chat. All trademarks, service marks, and intellectual property belong to their respective owners.
+- Microsoft Corporation
+- Rocket.Chat Technologies Corp.
+- Any other official communication platforms
 
-## License
+All trademarks, service marks, and intellectual property belong to their respective owners. This project is developed purely for personal use and experimentation.
 
-MIT
+### Known Limitations
+
+- Some corporate SSO flows may require manual intervention
+- Screen sharing requires proper xdg-desktop-portal setup
+- Wayland performance depends on compositor capabilities
+
+## 🤝 Contributing
+
+While this is primarily a personal project, contributions are welcome:
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📜 License
+
+<span style="color:#4361EE">MIT License</span> © 2026 sigurs
+
+See [LICENSE](LICENSE) for full details.
+
+---
+
+<span style="color:#7209B7">Made with ❤️ for Linux users who want unified communication</span>
