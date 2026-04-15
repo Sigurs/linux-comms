@@ -3,6 +3,7 @@ import { ZOOM_MIN, ZOOM_MAX } from '../shared/types';
 import { Sidebar } from './sidebar';
 import { WebviewManager } from './webview-manager';
 import { DragDropWrapper } from './drag-drop-wrapper';
+import { RocketChatPoller } from '../services/rocketchat-poller';
 
 type Provider = { id: string; name: string; icon: string };
 type ProviderField = {
@@ -21,6 +22,14 @@ const webviewContainer = document.getElementById('webview-container')!;
 const emptyState = document.getElementById('empty-state')!;
 
 const webviewManager = new WebviewManager(webviewContainer, (profileId, count) => {
+  sidebar.updateBadge(profileId, count);
+  const total = sidebar.getTotalBadgeCount();
+  window.electronAPI.setActiveProfile(activeProfileId ?? '');
+  // Update tray via title
+  document.title = total > 0 ? `(${total}) Linux Comms` : 'Linux Comms';
+});
+
+const rocketChatPoller = new RocketChatPoller((profileId, count) => {
   sidebar.updateBadge(profileId, count);
   const total = sidebar.getTotalBadgeCount();
   window.electronAPI.setActiveProfile(activeProfileId ?? '');
@@ -64,6 +73,15 @@ async function init() {
   setupKeyboardShortcuts();
   checkPortalStatus();
 
+  // Setup app focus/blur handling for RocketChat polling
+  window.addEventListener('focus', () => {
+    rocketChatPoller.setAppActive(true);
+  });
+
+  window.addEventListener('blur', () => {
+    rocketChatPoller.setAppActive(false);
+  });
+
   // Display build version in sidebar footer
   const versionEl = document.getElementById('app-version');
   if (versionEl) {
@@ -90,6 +108,11 @@ function initWebviews() {
   // Create webviews for all profiles eagerly so they load in background
   for (const profile of profiles) {
     webviewManager.ensureWebview(profile);
+
+    // Start RocketChat poller for RocketChat profiles
+    if (profile.providerId === 'rocketchat') {
+      rocketChatPoller.startPolling(profile);
+    }
   }
 
   // Activate last used profile or first available
@@ -226,6 +249,21 @@ function setupKeyboardShortcuts() {
 }
 
 function activateProfile(profileId: string) {
+  const profile = profiles.find((p) => p.id === profileId);
+
+  // Mark previous active profile as inactive if it was RocketChat
+  if (activeProfileId && activeProfileId !== profileId) {
+    const prevProfile = profiles.find((p) => p.id === activeProfileId);
+    if (prevProfile?.providerId === 'rocketchat') {
+      rocketChatPoller.setProfileActive(activeProfileId, false);
+    }
+  }
+
+  // Update poller state before switching (so it knows the profile is becoming active)
+  if (profile?.providerId === 'rocketchat') {
+    rocketChatPoller.setProfileActive(profileId, true);
+  }
+
   webviewManager.switchTo(profileId);
   sidebar.setActive(profileId);
   activeProfileId = profileId;
