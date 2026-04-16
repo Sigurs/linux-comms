@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import { BrowserWindow, session } from 'electron';
 import { getProvider } from '../providers';
+import { applyWaylandDisplayMediaHandler, debugScreenShare } from './ipc/screen-share';
 import { getAllProfiles } from './store/profile-store';
 
 let mainWindow: BrowserWindow | null = null;
@@ -71,13 +72,21 @@ export function applySessionPermissions(
 		const allowed =
 			allowedPermissions.includes(permission) ||
 			alwaysAllowed.includes(permission);
+		if (debugScreenShare && (permission.includes('display') || permission.includes('capture'))) {
+			console.log(`[screen-share] permission request ${permission} ${allowed ? 'allowed' : 'denied'} partition=${partition}`);
+		}
 		callback(allowed);
 	});
 
 	sess.setPermissionCheckHandler((_webContents, permission) => {
-		return (
+		const allowed =
 			allowedPermissions.includes(permission) ||
-			alwaysAllowed.includes(permission)
-		);
+			alwaysAllowed.includes(permission);
+		if (debugScreenShare && (permission.includes('display') || permission.includes('capture'))) {
+			console.log(`[screen-share] permission check ${permission} ${allowed ? 'allowed' : 'denied'} partition=${partition}`);
+		}
+		return allowed;
 	});
+
+	applyWaylandDisplayMediaHandler(partition);
 }

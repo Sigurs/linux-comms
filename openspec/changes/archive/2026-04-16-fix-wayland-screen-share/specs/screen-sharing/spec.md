@@ -1,4 +1,4 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Screen sharing via xdg-desktop-portal on Wayland
 When running under Wayland, the shell SHALL route `getDisplayMedia` requests through `org.freedesktop.portal.ScreenCast` so the user can share a screen or window. The application SHALL enable the `WebRTCPipeWireCapturer` Chromium feature flag at startup (merged additively with any existing `enable-features` value) and SHALL register an explicit `setDisplayMediaRequestHandler` on each provider session that delegates to the PipeWire/portal path when on Wayland.
@@ -29,30 +29,3 @@ When running under Wayland, the shell SHALL route `getDisplayMedia` requests thr
 - **WHEN** the app starts on Wayland
 - **THEN** `WebRTCPipeWireCapturer` SHALL be present in the Chromium `enable-features` flag
 - **AND** any features already set by Electron internals SHALL be preserved
-
-### Requirement: Screen sharing on XWayland / X11
-When running under X11 or XWayland, the shell SHALL allow `getDisplayMedia` using Electron's standard `desktopCapturer` API.
-
-#### Scenario: Screen share on X11
-- **WHEN** a provider webview calls `getDisplayMedia`
-- **AND** the session is running under X11 or XWayland
-- **THEN** the shell SHALL use `desktopCapturer.getSources` to enumerate screens and windows
-- **AND** pass the selected source stream to the webview
-
-### Requirement: Screen share source selection
-The user SHALL be able to choose which screen or window to share.
-
-#### Scenario: Multiple screens available
-- **WHEN** the user initiates screen sharing and multiple monitors are connected
-- **THEN** the picker SHALL show all available screens and windows as selectable options
-
-#### Scenario: User cancels sharing
-- **WHEN** the user dismisses the source picker without selecting
-- **THEN** the webview SHALL receive a `NotAllowedError` and no stream SHALL be opened
-
-### Requirement: Screen sharing stops when call ends
-Screen sharing SHALL be terminated when the provider app ends the call or the user stops sharing within the provider UI.
-
-#### Scenario: Stop sharing from provider UI
-- **WHEN** the provider app signals stop sharing (track ends)
-- **THEN** the PipeWire stream or desktop capturer source SHALL be released

@@ -11,9 +11,11 @@ const { ipcRenderer, contextBridge } =
 	require('electron') as typeof import('electron');
 
 const isWayland = !!process.env.WAYLAND_DISPLAY;
+const debugScreenShare = process.argv.includes('--debug');
 
 contextBridge.exposeInMainWorld('__linuxComms', {
 	isWayland,
+	debugScreenShare,
 
 	/** Send a notification to main process to display natively */
 	sendNotification: (profileId: string, title: string, body: string) => {
@@ -38,6 +40,13 @@ contextBridge.exposeInMainWorld('__linuxComms', {
 	/** Notify host that a link wants to open */
 	openLinkChoice: (url: string): void => {
 		ipcRenderer.sendToHost('link-open-request', url);
+	},
+
+	/** Forward a getDisplayMedia error to the main process log (debug mode only) */
+	reportScreenShareError: (name: string, message: string): void => {
+		if (debugScreenShare) {
+			ipcRenderer.send('screen-share:debug-error', name, message);
+		}
 	},
 });
 

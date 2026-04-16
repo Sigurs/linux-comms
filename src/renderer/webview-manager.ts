@@ -157,6 +157,19 @@ const INJECTION_SCRIPT = `
       });
     };
   }
+
+  // ── Wayland getDisplayMedia debug error capture ──
+  if (lc.isWayland && lc.debugScreenShare && navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+    const _origWaylandGDM = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);
+    navigator.mediaDevices.getDisplayMedia = async function(constraints) {
+      try {
+        return await _origWaylandGDM(constraints);
+      } catch(err) {
+        lc.reportScreenShareError(err && err.name ? err.name : 'UnknownError', err && err.message ? err.message : String(err));
+        throw err;
+      }
+    };
+  }
 })();
 `;
 

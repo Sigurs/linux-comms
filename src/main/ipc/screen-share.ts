@@ -1,9 +1,32 @@
 import { join } from 'node:path';
-import { BrowserWindow, desktopCapturer, ipcMain, screen } from 'electron';
+import { app, BrowserWindow, desktopCapturer, ipcMain, screen, session } from 'electron';
 import { IPC } from '../../shared/ipc-channels';
 import type { DesktopSource } from '../../shared/types';
 import { getPortalStatus } from '../platform/portal';
 import { isWayland } from '../platform/wayland';
+
+export const debugScreenShare = app.commandLine.hasSwitch('debug');
+
+/**
+ * Register a setDisplayMediaRequestHandler for a provider session on Wayland.
+ * Without this, Electron 30+ drops getDisplayMedia() requests from webview contexts
+ * before they reach the xdg-desktop-portal. Calling callback({}) with no streams
+ * tells Chromium to use its built-in portal path (PipeWire via WebRTCPipeWireCapturer).
+ * No-op on X11 — the existing custom picker flow handles that path.
+ */
+export function applyWaylandDisplayMediaHandler(partition: string): void {
+	if (!isWayland()) return;
+	const sess = session.fromPartition(partition);
+	sess.setDisplayMediaRequestHandler((_request, callback) => {
+		if (debugScreenShare) {
+			console.log(
+				`[screen-share] handler invoked wayland=true portalStatus=${getPortalStatus()} partition=${partition}`,
+			);
+		}
+		// No video/audio specified → Chromium routes to xdg-desktop-portal on Wayland
+		callback({});
+	});
+}
 
 export function registerScreenShareIpc(): void {
 	ipcMain.handle(IPC.PORTAL_STATUS, () => ({
@@ -49,6 +72,12 @@ export function registerScreenShareIpc(): void {
 			pendingPickerResolve?.(sourceId);
 			pendingPickerResolve = null;
 			win.close();
+		}
+	});
+
+	ipcMain.on(IPC.SCREEN_SHARE_DEBUG_ERROR, (_event, name: string, message: string) => {
+		if (debugScreenShare) {
+			console.log(`[screen-share] webview error name=${name} message=${message}`);
 		}
 	});
 }

@@ -15,6 +15,7 @@ export const IPC = {
 	SCREEN_SHARE_GET_SOURCES: 'screen-share:get-sources',
 	SCREEN_SHARE_SHOW_PICKER: 'screen-share:show-picker',
 	SCREEN_SHARE_PICK_SOURCE: 'screen-share:pick-source', // picker → main
+	SCREEN_SHARE_DEBUG_ERROR: 'screen-share:debug-error', // webview → main (debug mode only)
 	PORTAL_STATUS: 'portal:status',
 
 	// Notifications (webview preload → main)
