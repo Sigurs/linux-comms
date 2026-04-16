@@ -23,7 +23,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.4.12",
     "@types/node": "^25.6.0",
-    "electron": "^41.2.0",
+    "electron": "^41.2.1",
     "electron-builder": "^26.0.0",
     "esbuild": "^0.28.0",
     "lucide-static": "^1.8.0",
