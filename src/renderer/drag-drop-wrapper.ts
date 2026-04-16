@@ -6,6 +6,7 @@ export class DragDropWrapper {
 	private startX = 0;
 	private startY = 0;
 	private dragThreshold = 10; // pixels - how far mouse can move before canceling drag
+	private dragStartIndex = -1;
 
 	constructor(
 		private container: HTMLElement,
@@ -47,12 +48,15 @@ export class DragDropWrapper {
 			this.handleMouseMove(e);
 		});
 
+		// Only cancel if not actively dragging — active drags end via handleDragEnd
+		// (registered on document). Calling cancelDrag() here during a drag would
+		// remove handleDragEnd from the document before it fires (bubble order).
 		this.container.addEventListener('mouseup', () => {
-			this.cancelDrag();
+			if (!this.isDragging) this.cancelDrag();
 		});
 
 		this.container.addEventListener('mouseleave', () => {
-			this.cancelDrag();
+			if (!this.isDragging) this.cancelDrag();
 		});
 	}
 
@@ -76,6 +80,9 @@ export class DragDropWrapper {
 		}
 
 		this.isDragging = true;
+		this.dragStartIndex = Array.from(
+			this.container.querySelectorAll('.profile-entry'),
+		).indexOf(entry);
 		entry.classList.add('dragging');
 		entry.style.opacity = '0.7';
 
@@ -133,12 +140,10 @@ export class DragDropWrapper {
 			const entries = Array.from(
 				this.container.querySelectorAll('.profile-entry'),
 			);
-			const fromIndex = Array.from(this.container.children).indexOf(
-				draggingEntry,
-			);
+			const fromIndex = this.dragStartIndex;
 			const toIndex = entries.indexOf(draggingEntry);
 
-			if (fromIndex !== toIndex) {
+			if (fromIndex !== -1 && fromIndex !== toIndex) {
 				this.onReorder(fromIndex, toIndex);
 			}
 		}
@@ -177,6 +182,7 @@ export class DragDropWrapper {
 
 		this.hideCountdown();
 		this.currentEntry = null;
+		this.dragStartIndex = -1;
 
 		if (this.isDragging) {
 			this.isDragging = false;

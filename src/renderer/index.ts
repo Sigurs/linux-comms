@@ -57,26 +57,16 @@ sidebar.setOnChangeIcon(async (profile) => {
 });
 const _dragDropWrapper = new DragDropWrapper(
 	document.getElementById('profile-list')!,
-	async (fromIndex, toIndex) => {
-		// Get current profile IDs in order
-		const profileElements = Array.from(
-			document.querySelectorAll('.profile-entry'),
-		);
-		const profileIds = profileElements.map((el) => el.dataset.profileId);
+	async (_fromIndex, _toIndex) => {
+		// DOM is already in the correct final order after drag; read it directly
+		const profileIds = Array.from(document.querySelectorAll('.profile-entry'))
+			.map((el) => (el as HTMLElement).dataset.profileId)
+			.filter((id): id is string => !!id);
 
-		// Reorder the array
-		const [movedId] = profileIds.splice(fromIndex, 1);
-		profileIds.splice(toIndex, 0, movedId);
-
-		// Optimistic UI update - re-render immediately
-		renderSidebar();
-
-		// Update backend with debouncing to handle rapid reordering
 		try {
 			await window.electronAPI.updateProfileOrder(profileIds);
 		} catch (error) {
 			console.error('Failed to update profile order:', error);
-			// Show error to user or revert UI
 		}
 	},
 );
