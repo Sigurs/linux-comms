@@ -61,7 +61,7 @@
           "StartupWMClass": "linux-comms"
         }
       },
-      "compression": "maximum",
+      "compression": "normal",
       "executableName": "linux-comms",
       "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
