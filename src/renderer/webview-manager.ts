@@ -1,6 +1,8 @@
 import { getProvider } from '../providers';
 import type { Profile, ProfileIcon } from '../shared/types';
 
+const debugLink = process.argv.includes('--debug');
+
 /**
  * Injected into Teams webviews post-login to find the organisation logo.
  * Uses MutationObserver with a priority-ordered selector list; calls
@@ -63,6 +65,7 @@ const INJECTION_SCRIPT = `
   if (!window.__linuxComms || window.__linuxCommsInjected) return;
   window.__linuxCommsInjected = true;
   const lc = window.__linuxComms;
+  var _debugLink = (typeof process !== 'undefined' && process.argv && process.argv.includes('--debug'));
 
   // ── Notification override ──
   const OrigNotif = window.Notification;
@@ -81,7 +84,10 @@ const INJECTION_SCRIPT = `
 
   // ── window.open override for link choice dialog ──
   window.open = function(url, target, features) {
-    console.log('[link] window.open intercepted:', url, 'target:', target);
+    if (_debugLink) {
+      var _scheme = ''; try { _scheme = new URL(url || '').protocol; } catch(_) {}
+      console.log('[link] source=window.open provider=' + lc.__providerId + ' profile=' + lc.__profileName + ' scheme=' + _scheme + ' target=' + target + ' features=' + features + ' url=' + url + ' page=' + location.href);
+    }
     lc.openLinkChoice(url || '');
     return null;
   };
@@ -97,10 +103,13 @@ const INJECTION_SCRIPT = `
       var destOrigin = new URL(anchor.href).origin;
       if (destOrigin === location.origin) return; // same-origin — let browser handle it
     } catch(err) {
-      console.log('[link] anchor click error - malformed URL:', anchor.href, 'Error:', err.message);
+      if (_debugLink) console.log('[link] source=anchor malformed url=' + anchor.href + ' error=' + err.message);
       return; // Let browser handle malformed URLs
     }
-    console.log('[link] anchor click intercepted:', anchor.href);
+    if (_debugLink) {
+      var _scheme = ''; try { _scheme = new URL(anchor.href).protocol; } catch(_) {}
+      console.log('[link] source=anchor provider=' + lc.__providerId + ' profile=' + lc.__profileName + ' scheme=' + _scheme + ' url=' + anchor.href + ' page=' + location.href);
+    }
     e.preventDefault();
     lc.openLinkChoice(anchor.href);
   }, true); // capture phase so we run before any SPA click handlers
@@ -246,9 +255,8 @@ export class WebviewManager {
 
 		// DOM-ready: inject overrides and store the profile ID in the preload context
 		wv.addEventListener('dom-ready', () => {
-			// Inject the profile ID into the webview so notifications carry the right ID
 			wv.executeJavaScript(
-				`window.__linuxComms && (window.__linuxComms.__profileId = "${profile.id}");`,
+				`window.__linuxComms && (window.__linuxComms.__profileId = "${profile.id}", window.__linuxComms.__providerId = "${profile.providerId}", window.__linuxComms.__profileName = ${JSON.stringify(profile.name)});`,
 			).catch(() => {});
 			wv.executeJavaScript(INJECTION_SCRIPT).catch(() => {});
 
@@ -305,12 +313,10 @@ export class WebviewManager {
 				}
 			} else if (ev.channel === 'link-open-request') {
 				const url = ev.args[0] as string;
-				console.log(
-					'[link] ipc-message link-open-request:',
-					url,
-					'profile:',
-					profile.id,
-				);
+				if (debugLink) {
+					let scheme = ''; try { scheme = new URL(url).protocol; } catch (_) {}
+					console.log('[link] source=ipc-message provider=' + profile.providerId + ' profile=' + profile.name + ' scheme=' + scheme + ' url=' + url);
+				}
 				if (url) {
 					window.electronAPI.openLinkChoice(url, profile.id);
 				}
@@ -321,7 +327,10 @@ export class WebviewManager {
 		// These bypass the window.open() JS override and fire as native webview events.
 		wv.addEventListener('new-window', (e) => {
 			const ev = e as Event & { url: string };
-			console.log('[link] new-window event:', ev.url, 'profile:', profile.id);
+			if (debugLink) {
+				let scheme = ''; try { scheme = new URL(ev.url).protocol; } catch (_) {}
+				console.log('[link] source=new-window provider=' + profile.providerId + ' profile=' + profile.name + ' scheme=' + scheme + ' url=' + ev.url);
+			}
 			if (ev.url) {
 				window.electronAPI.openLinkChoice(ev.url, profile.id);
 			}
@@ -333,37 +342,27 @@ export class WebviewManager {
 		wv.addEventListener('will-navigate', (e) => {
 			const ev = e as Event & { url: string };
 			if (!ev.url) return;
-			console.log('[link] will-navigate:', ev.url, 'profile:', profile.id);
 			try {
 				const destOrigin = new URL(ev.url).origin;
 				const profileOrigin = new URL(profile.url).origin;
-				if (destOrigin !== profileOrigin) {
+				const sameOrigin = destOrigin === profileOrigin;
+				if (!sameOrigin) {
 					const provider = getProvider(profile.providerId);
-					if (
-						provider?.trustedDomains &&
-						matchesTrustedDomain(ev.url, provider.trustedDomains)
-					) {
-						console.log(
-							'[link] will-navigate: trusted domain, allowing through:',
-							ev.url,
-						);
+					const trustedDomains = provider?.trustedDomains;
+					const trustedMatch = trustedDomains?.find((p) => matchesTrustedDomain(ev.url, [p]));
+					if (debugLink) {
+						let scheme = ''; try { scheme = new URL(ev.url).protocol; } catch (_) {}
+						const trusted = trustedDomains?.length ? (trustedMatch ?? 'no match') : 'no trusted domains';
+						console.log('[link] source=will-navigate provider=' + profile.providerId + ' profile=' + profile.name + ' sameOrigin=' + sameOrigin + ' trusted=' + trusted + ' scheme=' + scheme + ' url=' + ev.url);
+					}
+					if (trustedMatch !== undefined) {
 						return; // Internal auth/redirect navigation — let it proceed silently
 					}
-					console.log(
-						'[link] will-navigate: external URL, showing dialog:',
-						ev.url,
-					);
 					e.preventDefault();
 					window.electronAPI.openLinkChoice(ev.url, profile.id);
 				}
 			} catch (err) {
-				console.log(
-					'[link] will-navigate error - malformed URL:',
-					ev.url,
-					'Error:',
-					err instanceof Error ? err.message : String(err),
-				);
-				// Malformed URL — let the webview handle it
+				if (debugLink) console.log('[link] will-navigate malformed url=' + ev.url + ' error=' + (err instanceof Error ? err.message : String(err)));
 			}
 		});
 

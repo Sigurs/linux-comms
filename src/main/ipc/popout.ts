@@ -4,7 +4,7 @@ import { getProvider } from '../../providers';
 import { IPC } from '../../shared/ipc-channels';
 import { getAllProfiles } from '../store/profile-store';
 import { applySessionPermissions } from '../window';
-import { showLinkOpenDialog } from './link-open';
+import { debugLinkOpen, showLinkOpenDialog } from './link-open';
 
 const popoutWindows = new Map<string, BrowserWindow>();
 
@@ -71,6 +71,11 @@ export function registerPopoutIpc(): void {
 
 		// Intercept window.open() and target="_blank" link clicks
 		win.webContents.setWindowOpenHandler(({ url }) => {
+			if (debugLinkOpen) {
+				let scheme = '';
+				try { scheme = new URL(url).protocol; } catch (_) {}
+				console.log('[link-open] source=popout:window-open profileId=' + profileId + ' profile=' + profile.name + ' provider=' + profile.providerId + ' scheme=' + scheme + ' url=' + url);
+			}
 			try {
 				void showLinkOpenDialog(url, profileId, win);
 			} catch (err) {
@@ -80,7 +85,6 @@ export function registerPopoutIpc(): void {
 					'Error:',
 					err instanceof Error ? err.message : String(err),
 				);
-				// Fall back to browser handling if dialog fails
 				void shell.openExternal(url);
 			}
 			return { action: 'deny' };
@@ -88,13 +92,15 @@ export function registerPopoutIpc(): void {
 
 		// Intercept same-frame navigation to external origins
 		win.webContents.on('will-navigate', (event, url) => {
+			let sameOrigin = false;
+			let trustedMatch: string | undefined;
 			try {
-				if (new URL(url).origin === new URL(profile.url).origin) return;
-				if (
-					provider.trustedDomains &&
-					matchesTrustedDomain(url, provider.trustedDomains)
-				)
-					return;
+				sameOrigin = new URL(url).origin === new URL(profile.url).origin;
+				if (sameOrigin) return;
+				if (provider.trustedDomains && provider.trustedDomains.length > 0) {
+					trustedMatch = provider.trustedDomains.find((p) => matchesTrustedDomain(url, [p]));
+				}
+				if (trustedMatch !== undefined) return;
 			} catch (err) {
 				console.log(
 					'[link] popout will-navigate error - malformed URL:',
@@ -103,6 +109,12 @@ export function registerPopoutIpc(): void {
 					err instanceof Error ? err.message : String(err),
 				);
 				return;
+			}
+			if (debugLinkOpen) {
+				let scheme = '';
+				try { scheme = new URL(url).protocol; } catch (_) {}
+				const trusted = provider.trustedDomains?.length ? (trustedMatch ?? 'no match') : 'no trusted domains';
+				console.log('[link-open] source=popout:will-navigate profileId=' + profileId + ' profile=' + profile.name + ' provider=' + profile.providerId + ' sameOrigin=' + sameOrigin + ' trusted=' + trusted + ' scheme=' + scheme + ' url=' + url);
 			}
 			event.preventDefault();
 			void showLinkOpenDialog(url, profileId, win);

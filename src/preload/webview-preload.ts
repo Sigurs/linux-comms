@@ -16,6 +16,8 @@ const debugScreenShare = process.argv.includes('--debug');
 contextBridge.exposeInMainWorld('__linuxComms', {
 	isWayland,
 	debugScreenShare,
+	__providerId: '' as string,
+	__profileName: '' as string,
 
 	/** Send a notification to main process to display natively */
 	sendNotification: (profileId: string, title: string, body: string) => {

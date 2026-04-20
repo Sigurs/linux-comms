@@ -1,9 +1,11 @@
 import { join } from 'node:path';
-import { BrowserWindow, dialog, ipcMain, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
 import { getProvider } from '../../providers';
 import { IPC } from '../../shared/ipc-channels';
 import { getAllProfiles } from '../store/profile-store';
 import { applySessionPermissions, getMainWindow } from '../window';
+
+export const debugLinkOpen = app.commandLine.hasSwitch('debug');
 
 function truncateUrl(url: string, maxLength: number = 60): string {
 	if (url.length <= maxLength) return url;
@@ -17,10 +19,12 @@ export async function showLinkOpenDialog(
 	profileId: string,
 	parentWin: BrowserWindow | null,
 ): Promise<void> {
-	if (dialogOpen) return;
+	if (dialogOpen) {
+		if (debugLinkOpen) console.log('[link-open] duplicate discarded profileId=' + profileId + ' url=' + url);
+		return;
+	}
 
 	try {
-		console.log('[link-open] URL:', url, 'ProfileId:', profileId);
 
 		// Validate URL early to fail fast with malformed URLs
 		try {
@@ -52,18 +56,35 @@ export async function showLinkOpenDialog(
 		const profile = profiles.find((p) => p.id === profileId);
 
 		if (!profile) {
-			console.log('[link-open] Profile not found for ID:', profileId);
-			// Fall back to opening in browser if profile is missing
+			if (debugLinkOpen) console.log('[link-open] profile not found profileId=' + profileId + ' url=' + url + ' — falling back to browser');
 			await shell.openExternal(url);
 			return;
 		}
 
-		console.log(
-			'[link-open] Profile found:',
-			profile?.name,
-			'Partition:',
-			profile?.partition,
-		);
+		const provider = getProvider(profile.providerId);
+		let urlScheme = '';
+		try { urlScheme = new URL(url).protocol; } catch (_) {}
+
+		if (debugLinkOpen) console.log('[link-open] entry profileId=' + profileId + ' profile=' + profile.name + ' provider=' + profile.providerId + ' partition=' + profile.partition + ' scheme=' + urlScheme + ' url=' + url);
+
+		if (debugLinkOpen) {
+			const trustedDomains = provider?.trustedDomains;
+			if (!trustedDomains || trustedDomains.length === 0) {
+				console.log('[link-open] trusted-domains: none configured for provider=' + profile.providerId);
+			} else {
+				const matched = trustedDomains.find((pattern) => {
+					try {
+						const hostname = new URL(url).hostname;
+						if (pattern.startsWith('*.')) {
+							const suffix = pattern.slice(1);
+							return hostname === pattern.slice(2) || hostname.endsWith(suffix);
+						}
+						return hostname === pattern;
+					} catch (_) { return false; }
+				});
+				console.log('[link-open] trusted-domains provider=' + profile.providerId + ' matched=' + (matched ?? 'no match'));
+			}
+		}
 
 		const truncatedUrl = truncateUrl(url, 60);
 
@@ -87,33 +108,28 @@ export async function showLinkOpenDialog(
 			dialogOpen = false;
 		}
 
-		console.log('[link-open] User choice:', result.response);
+		const actions = ['browser', 'popup', 'cancel'] as const;
+		if (debugLinkOpen) console.log('[link-open] user choice response=' + result.response + ' action=' + (actions[result.response] ?? 'unknown'));
 
 		if (result.response === 2) {
 			return;
 		}
 
 		if (result.response === 0) {
-			console.log('[link-open] Opening in browser');
+			if (debugLinkOpen) console.log('[link-open] opening in browser url=' + url);
 			await shell.openExternal(url);
 			return;
 		}
 
 		if (result.response === 1) {
-			console.log('[link-open] Opening in popup');
+			if (debugLinkOpen) console.log('[link-open] opening in popup partition=' + profile.partition + ' url=' + url);
 
-			const provider = getProvider(profile.providerId);
 			if (provider) {
 				applySessionPermissions(
 					profile.partition,
 					provider.webviewOptions.allowedPermissions ?? [],
 				);
 			}
-
-			console.log(
-				'[link-open] Creating BrowserWindow with partition:',
-				profile.partition,
-			);
 			const win = new BrowserWindow({
 				width: 1200,
 				height: 800,
@@ -135,7 +151,6 @@ export async function showLinkOpenDialog(
 			});
 
 			win.loadURL(url);
-			console.log('[link-open] Popup window created');
 		}
 	} catch (err) {
 		console.log(
