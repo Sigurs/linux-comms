@@ -21,13 +21,13 @@
     "format": "biome format --write src/"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.12",
-    "@types/node": "^25.6.0",
+    "@biomejs/biome": "^2.4.16",
+    "@types/node": "^25.9.3",
     "electron": "^41.2.1",
-    "electron-builder": "^26.0.0",
-    "esbuild": "^0.28.0",
-    "lucide-static": "^1.8.0",
-    "typescript": "^6.0.2"
+    "electron-builder": "^26.15.2",
+    "esbuild": "^0.28.1",
+    "lucide-static": "^1.17.0",
+    "typescript": "^6.0.3"
   },
   "build": {
     "appId": "io.sigurs.LinuxComms",
